@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sub_tracker/core/theme/app_theme.dart';
 import 'package:sub_tracker/features/subscriptions/screens/subscriptions_list_screen.dart';
+import 'package:sub_tracker/features/subscriptions/screens/subscription_form_screen.dart';
+import 'package:sub_tracker/features/subscriptions/screens/subscription_detail_screen.dart';
 import 'package:sub_tracker/features/analytics/screens/analytics_screen.dart';
 import 'package:sub_tracker/features/settings/screens/settings_screen.dart';
 
@@ -18,7 +20,22 @@ final goRouter = GoRouter(
           ScaffoldWithNav(navigationShell: navigationShell),
       branches: [
         StatefulShellBranch(routes: [
-          GoRoute(path: '/subscriptions', builder: (context, state) => const SubscriptionsListScreen()),
+          GoRoute(
+            path: '/subscriptions',
+            builder: (context, state) => const SubscriptionsListScreen(),
+            routes: [
+              GoRoute(
+                path: 'add',
+                builder: (_, _) => const SubscriptionFormScreen(),
+              ),
+              GoRoute(
+                path: ':id',
+                builder: (_, state) => SubscriptionDetailScreen(
+                  subscriptionId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
+          ),
         ]),
         StatefulShellBranch(routes: [
           GoRoute(path: '/analytics', builder: (context, state) => const AnalyticsScreen()),
