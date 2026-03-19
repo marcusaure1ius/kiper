@@ -1,0 +1,148 @@
+<h2>Навигация и основные экраны</h2>
+<p class="subtitle">Вайрфреймы ключевых экранов приложения SubTracker</p>
+
+<div class="cards">
+  <!-- Главный экран -->
+  <div class="card" data-choice="subscriptions" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1a2e;border-radius:12px;padding:16px;color:#fff;font-family:system-ui;min-height:320px;">
+        <!-- Status bar -->
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:12px;">
+          <span>9:41</span>
+          <span>●●● WiFi 🔋</span>
+        </div>
+        <!-- Header -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:13px;color:#888;">Расходы в месяц</div>
+          <div style="font-size:28px;font-weight:700;color:#7c4dff;">₽12,450</div>
+        </div>
+        <!-- Subscription cards -->
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:#252547;border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:#e50914;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">N</div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;">Netflix</div>
+              <div style="font-size:11px;color:#888;">Списание 25 мар</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;font-weight:600;">$22.99</div>
+              <div style="font-size:10px;color:#888;">≈ ₽2,115</div>
+            </div>
+          </div>
+          <div style="background:#252547;border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:#1DB954;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">S</div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;">Spotify</div>
+              <div style="font-size:11px;color:#888;">Списание 1 апр</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;font-weight:600;">$10.99</div>
+              <div style="font-size:10px;color:#888;">≈ ₽1,011</div>
+            </div>
+          </div>
+          <div style="background:#252547;border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:#ff6b35;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">М</div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;">МТС</div>
+              <div style="font-size:11px;color:#888;">Списание 15 мар</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;font-weight:600;">₽890</div>
+            </div>
+          </div>
+        </div>
+        <!-- Bottom nav -->
+        <div style="display:flex;justify-content:space-around;margin-top:16px;padding-top:12px;border-top:1px solid #333;">
+          <div style="text-align:center;color:#7c4dff;font-size:10px;">
+            <div style="font-size:18px;">📋</div>Подписки
+          </div>
+          <div style="text-align:center;color:#666;font-size:10px;">
+            <div style="font-size:18px;">📊</div>Аналитика
+          </div>
+          <div style="text-align:center;color:#666;font-size:10px;">
+            <div style="font-size:18px;">⚙️</div>Настройки
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Подписки</h3>
+      <p>Главный экран — список карточек с общей суммой сверху</p>
+    </div>
+  </div>
+
+  <!-- Аналитика -->
+  <div class="card" data-choice="analytics" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1a2e;border-radius:12px;padding:16px;color:#fff;font-family:system-ui;min-height:320px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:12px;">
+          <span>9:41</span>
+          <span>●●● WiFi 🔋</span>
+        </div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:16px;">Аналитика</div>
+        <!-- Bar chart -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:12px;color:#888;margin-bottom:8px;">Расходы по месяцам, ₽</div>
+          <div style="display:flex;align-items:flex-end;gap:6px;height:100px;">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <div style="font-size:8px;color:#888;">9.2k</div>
+              <div style="width:100%;background:#7c4dff;border-radius:4px 4px 0 0;height:60px;"></div>
+              <div style="font-size:9px;color:#888;">Окт</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <div style="font-size:8px;color:#888;">10.1k</div>
+              <div style="width:100%;background:#7c4dff;border-radius:4px 4px 0 0;height:66px;"></div>
+              <div style="font-size:9px;color:#888;">Ноя</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <div style="font-size:8px;color:#888;">11.8k</div>
+              <div style="width:100%;background:#7c4dff;border-radius:4px 4px 0 0;height:77px;"></div>
+              <div style="font-size:9px;color:#888;">Дек</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <div style="font-size:8px;color:#888;">12.4k</div>
+              <div style="width:100%;background:#7c4dff;border-radius:4px 4px 0 0;height:82px;"></div>
+              <div style="font-size:9px;color:#888;">Янв</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <div style="font-size:8px;color:#888;">12.4k</div>
+              <div style="width:100%;background:#7c4dff;border-radius:4px 4px 0 0;height:82px;"></div>
+              <div style="font-size:9px;color:#888;">Фев</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <div style="font-size:8px;color:#888;">12.4k</div>
+              <div style="width:100%;background:linear-gradient(180deg,#7c4dff55,#7c4dff22);border:1px dashed #7c4dff;border-radius:4px 4px 0 0;height:82px;"></div>
+              <div style="font-size:9px;color:#7c4dff;">Мар</div>
+            </div>
+          </div>
+        </div>
+        <!-- Pie chart placeholder -->
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div style="width:80px;height:80px;border-radius:50%;background:conic-gradient(#7c4dff 0% 35%, #ff6b35 35% 55%, #1DB954 55% 75%, #e50914 75% 100%);"></div>
+          <div style="font-size:11px;display:flex;flex-direction:column;gap:4px;">
+            <div><span style="color:#7c4dff;">●</span> Развлечения 35%</div>
+            <div><span style="color:#ff6b35;">●</span> Связь 20%</div>
+            <div><span style="color:#1DB954;">●</span> Работа 20%</div>
+            <div><span style="color:#e50914;">●</span> Облако 25%</div>
+          </div>
+        </div>
+        <!-- Bottom nav -->
+        <div style="display:flex;justify-content:space-around;margin-top:16px;padding-top:12px;border-top:1px solid #333;">
+          <div style="text-align:center;color:#666;font-size:10px;">
+            <div style="font-size:18px;">📋</div>Подписки
+          </div>
+          <div style="text-align:center;color:#7c4dff;font-size:10px;">
+            <div style="font-size:18px;">📊</div>Аналитика
+          </div>
+          <div style="text-align:center;color:#666;font-size:10px;">
+            <div style="font-size:18px;">⚙️</div>Настройки
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Аналитика</h3>
+      <p>Столбчатый график + прогноз (пунктир) + круговая по категориям</p>
+    </div>
+  </div>
+</div>
