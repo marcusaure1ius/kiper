@@ -1,13 +1,16 @@
 // lib/app.dart
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sub_tracker/core/notifications/notification_service.dart';
 import 'package:sub_tracker/core/theme/app_theme.dart';
-import 'package:sub_tracker/features/subscriptions/screens/subscriptions_list_screen.dart';
-import 'package:sub_tracker/features/subscriptions/screens/subscription_form_screen.dart';
-import 'package:sub_tracker/features/subscriptions/screens/subscription_detail_screen.dart';
 import 'package:sub_tracker/features/analytics/screens/analytics_screen.dart';
+import 'package:sub_tracker/features/settings/providers/settings_provider.dart';
 import 'package:sub_tracker/features/settings/screens/settings_screen.dart';
+import 'package:sub_tracker/features/subscriptions/screens/subscription_detail_screen.dart';
+import 'package:sub_tracker/features/subscriptions/screens/subscription_form_screen.dart';
+import 'package:sub_tracker/features/subscriptions/screens/subscriptions_list_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -48,19 +51,36 @@ final goRouter = GoRouter(
   ],
 );
 
-// NOTE: This will be upgraded to ConsumerStatefulWidget in a later task when
-// settings_provider and notification_service are created.
-class SubTrackerApp extends StatelessWidget {
+class SubTrackerApp extends ConsumerStatefulWidget {
   const SubTrackerApp({super.key});
 
   @override
+  ConsumerState<SubTrackerApp> createState() => _SubTrackerAppState();
+}
+
+class _SubTrackerAppState extends ConsumerState<SubTrackerApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Wire notification tap handler to navigate to the relevant subscription
+    NotificationService.onNotificationTap = (payload) {
+      if (payload != null && payload.isNotEmpty) {
+        _rootNavigatorKey.currentContext?.go('/subscriptions/$payload');
+      }
+    };
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeModeNotifierProvider);
+
     return DynamicColorBuilder(
       builder: (lightDynamic, darkDynamic) {
         return MaterialApp.router(
           title: 'SubTracker',
           theme: AppTheme.light(lightDynamic),
           darkTheme: AppTheme.dark(darkDynamic),
+          themeMode: themeMode,
           routerConfig: goRouter,
           debugShowCheckedModeBanner: false,
         );

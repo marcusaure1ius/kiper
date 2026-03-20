@@ -34,7 +34,7 @@ final class CategoriesNotifierProvider
 }
 
 String _$categoriesNotifierHash() =>
-    r'49137f32c069d51bfd8d65a2f464a18dc48bc533';
+    r'efa7daafadc3ba4bf735161d1b9fcc5bf6069c75';
 
 abstract class _$CategoriesNotifier extends $AsyncNotifier<void> {
   FutureOr<void> build();
