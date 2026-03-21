@@ -110,6 +110,85 @@ class AnalyticsCalculator {
     return period.nextDate(current);
   }
 
+  /// Returns weekly totals for past [pastWeeks] and future [futureWeeks] weeks.
+  static List<MonthlyTotal> weeklyTotals({
+    required List<AnalyticsSubscription> subscriptions,
+    required Map<Currency, double> rates,
+    required int pastWeeks,
+    required int futureWeeks,
+    required DateTime now,
+  }) {
+    final today = DateTime(now.year, now.month, now.day);
+    // Monday of current week
+    final currentWeekStart = today.subtract(Duration(days: today.weekday - 1));
+    final rangeStart = currentWeekStart.subtract(Duration(days: pastWeeks * 7));
+    final rangeEnd = currentWeekStart.add(Duration(days: (futureWeeks + 1) * 7));
+
+    final totals = <DateTime, double>{};
+    var cursor = rangeStart;
+    while (cursor.isBefore(rangeEnd)) {
+      totals[cursor] = 0.0;
+      cursor = cursor.add(const Duration(days: 7));
+    }
+
+    for (final sub in subscriptions) {
+      if (sub.status == 'cancelled') continue;
+
+      var billingDate = sub.startDate;
+      while (billingDate.isBefore(rangeStart)) {
+        billingDate = _nextBillingDate(billingDate, sub.billingPeriod, sub.customPeriodDays);
+      }
+
+      while (billingDate.isBefore(rangeEnd)) {
+        final bd = DateTime(billingDate.year, billingDate.month, billingDate.day);
+        final weekStart = bd.subtract(Duration(days: bd.weekday - 1));
+
+        if (totals.containsKey(weekStart)) {
+          final amountInRub = ExchangeRateService.convertToRub(sub.amount, sub.currency, rates);
+          totals[weekStart] = (totals[weekStart] ?? 0) + amountInRub;
+        }
+        billingDate = _nextBillingDate(billingDate, sub.billingPeriod, sub.customPeriodDays);
+      }
+    }
+
+    return totals.entries.map((e) => MonthlyTotal(
+      month: e.key,
+      amount: e.value,
+      isForecast: !e.key.isBefore(currentWeekStart),
+    )).toList()
+      ..sort((a, b) => a.month.compareTo(b.month));
+  }
+
+  /// Returns total spend per category (in RUB) for the past [pastMonths] months.
+  static Map<String?, double> categoryTotalsForPeriod({
+    required List<AnalyticsSubscription> subscriptions,
+    required Map<Currency, double> rates,
+    required int pastMonths,
+    required DateTime now,
+  }) {
+    final rangeStart = DateTime(now.year, now.month - pastMonths + 1, 1);
+    final rangeEnd = DateTime(now.year, now.month + 1, 1);
+
+    final totals = <String?, double>{};
+
+    for (final sub in subscriptions) {
+      if (sub.status == 'cancelled') continue;
+
+      var billingDate = sub.startDate;
+      while (billingDate.isBefore(rangeStart)) {
+        billingDate = _nextBillingDate(billingDate, sub.billingPeriod, sub.customPeriodDays);
+      }
+
+      while (billingDate.isBefore(rangeEnd)) {
+        final amountInRub = ExchangeRateService.convertToRub(sub.amount, sub.currency, rates);
+        totals[sub.categoryId] = (totals[sub.categoryId] ?? 0) + amountInRub;
+        billingDate = _nextBillingDate(billingDate, sub.billingPeriod, sub.customPeriodDays);
+      }
+    }
+
+    return totals;
+  }
+
   /// Returns monthly spend per category (in RUB), using monthlyEquivalent.
   static Map<String?, double> categoryBreakdown(
     List<AnalyticsSubscription> subscriptions,
@@ -165,8 +244,33 @@ Future<List<MonthlyTotal>> monthlyTotals(Ref ref) async {
   return AnalyticsCalculator.monthlyTotals(
     subscriptions: subs,
     rates: rates,
-    pastMonths: 5,
+    pastMonths: 6,
     futureMonths: 3,
+    now: DateTime.now(),
+  );
+}
+
+@riverpod
+Future<List<MonthlyTotal>> weeklyTotals(Ref ref) async {
+  final subs = await ref.watch(analyticsSubscriptionsProvider.future);
+  final rates = await ref.watch(exchangeRatesProvider.future);
+  return AnalyticsCalculator.weeklyTotals(
+    subscriptions: subs,
+    rates: rates,
+    pastWeeks: 6,
+    futureWeeks: 4,
+    now: DateTime.now(),
+  );
+}
+
+@riverpod
+Future<Map<String?, double>> categoryTotals6m(Ref ref) async {
+  final subs = await ref.watch(analyticsSubscriptionsProvider.future);
+  final rates = await ref.watch(exchangeRatesProvider.future);
+  return AnalyticsCalculator.categoryTotalsForPeriod(
+    subscriptions: subs,
+    rates: rates,
+    pastMonths: 6,
     now: DateTime.now(),
   );
 }

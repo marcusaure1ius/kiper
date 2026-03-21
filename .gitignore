@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+brainstorm
 
 # IntelliJ related
 *.iml
@@ -43,6 +44,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Signing
+android/key.properties
+android/app/*.jks
 
 # Claude Code
 .superpowers/

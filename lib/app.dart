@@ -10,6 +10,7 @@ import 'package:kiper/features/settings/providers/settings_provider.dart';
 import 'package:kiper/features/settings/screens/settings_screen.dart';
 import 'package:kiper/features/subscriptions/screens/subscription_detail_screen.dart';
 import 'package:kiper/features/subscriptions/screens/subscription_form_screen.dart';
+import 'package:kiper/features/home/screens/home_screen.dart';
 import 'package:kiper/features/subscriptions/screens/subscriptions_list_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -25,8 +26,12 @@ final goRouter = GoRouter(
         StatefulShellBranch(routes: [
           GoRoute(
             path: '/subscriptions',
-            builder: (context, state) => const SubscriptionsListScreen(),
+            builder: (context, state) => const HomeScreen(),
             routes: [
+              GoRoute(
+                path: 'list',
+                builder: (_, _) => const SubscriptionsListScreen(),
+              ),
               GoRoute(
                 path: 'add',
                 builder: (_, _) => const SubscriptionFormScreen(),
@@ -101,7 +106,7 @@ class ScaffoldWithNav extends StatelessWidget {
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: navigationShell.goBranch,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.subscriptions_outlined), selectedIcon: Icon(Icons.subscriptions), label: 'Подписки'),
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Главная'),
           NavigationDestination(icon: Icon(Icons.analytics_outlined), selectedIcon: Icon(Icons.analytics), label: 'Аналитика'),
           NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Настройки'),
         ],

@@ -90,7 +90,89 @@ final class MonthlyTotalsProvider
   }
 }
 
-String _$monthlyTotalsHash() => r'92b0b6fe2f1affdb871220f754bea0d2b71f14d3';
+String _$monthlyTotalsHash() => r'3c258808f3ce30eb409dcaa489f696bde1dd93c5';
+
+@ProviderFor(weeklyTotals)
+final weeklyTotalsProvider = WeeklyTotalsProvider._();
+
+final class WeeklyTotalsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<MonthlyTotal>>,
+          List<MonthlyTotal>,
+          FutureOr<List<MonthlyTotal>>
+        >
+    with
+        $FutureModifier<List<MonthlyTotal>>,
+        $FutureProvider<List<MonthlyTotal>> {
+  WeeklyTotalsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'weeklyTotalsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$weeklyTotalsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<MonthlyTotal>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<MonthlyTotal>> create(Ref ref) {
+    return weeklyTotals(ref);
+  }
+}
+
+String _$weeklyTotalsHash() => r'4eb15ccdc7bf48dbf4f37bf6fca1a34e489574c2';
+
+@ProviderFor(categoryTotals6m)
+final categoryTotals6mProvider = CategoryTotals6mProvider._();
+
+final class CategoryTotals6mProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String?, double>>,
+          Map<String?, double>,
+          FutureOr<Map<String?, double>>
+        >
+    with
+        $FutureModifier<Map<String?, double>>,
+        $FutureProvider<Map<String?, double>> {
+  CategoryTotals6mProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'categoryTotals6mProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$categoryTotals6mHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String?, double>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String?, double>> create(Ref ref) {
+    return categoryTotals6m(ref);
+  }
+}
+
+String _$categoryTotals6mHash() => r'7754e5a4301d7c637bc3dae1dea5a97a22413481';
 
 @ProviderFor(categoryBreakdown)
 final categoryBreakdownProvider = CategoryBreakdownProvider._();

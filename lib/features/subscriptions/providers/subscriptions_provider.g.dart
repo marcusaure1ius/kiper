@@ -34,7 +34,7 @@ final class SubscriptionsNotifierProvider
 }
 
 String _$subscriptionsNotifierHash() =>
-    r'1e85ac2c71c7a187a6ffbaed09f74e83b3b72acb';
+    r'a7fa8ac9290175db96777101068ff83fd0b52a39';
 
 abstract class _$SubscriptionsNotifier extends $AsyncNotifier<void> {
   FutureOr<void> build();
