@@ -37,6 +37,10 @@ class CategoriesNotifier extends _$CategoriesNotifier {
   }
 
   Future<void> remove(String id) async {
+    // Null out categoryId for subscriptions in this category
+    await (_db.update(_db.subscriptions)..where((t) => t.categoryId.equals(id))).write(
+      const SubscriptionsCompanion(categoryId: Value(null)),
+    );
     await (_db.delete(_db.categories)..where((t) => t.id.equals(id))).go();
   }
 }

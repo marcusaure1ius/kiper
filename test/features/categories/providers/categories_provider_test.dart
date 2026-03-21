@@ -9,7 +9,7 @@ void main() {
   late AppDatabase db;
   late ProviderContainer container;
   // Keep the stream provider alive for the duration of each test.
-  ProviderSubscription<AsyncValue<List<Category>>>? _catSub;
+  ProviderSubscription<AsyncValue<List<Category>>>? catSub;
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
@@ -17,11 +17,11 @@ void main() {
       databaseProvider.overrideWithValue(db),
     ]);
     // Start listening immediately so the provider is always active.
-    _catSub = container.listen(watchCategoriesProvider, (_, __) {});
+    catSub = container.listen(watchCategoriesProvider, (_, _) {});
   });
 
   tearDown(() async {
-    _catSub?.close();
+    catSub?.close();
     container.dispose();
     await db.close();
   });

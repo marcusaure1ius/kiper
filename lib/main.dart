@@ -11,6 +11,12 @@ void main() async {
   await NotificationService.init();
   final db = await createDatabase();
 
+  // Seed test data if DB is empty (debug only — remove for production)
+  final subCount = await db.select(db.subscriptions).get();
+  if (subCount.isEmpty) {
+    await db.seedTestSubscriptions();
+  }
+
   runApp(ProviderScope(
     overrides: [databaseProvider.overrideWithValue(db)],
     child: const SubTrackerApp(),
