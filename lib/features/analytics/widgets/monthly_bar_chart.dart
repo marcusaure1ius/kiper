@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kiper/features/analytics/providers/analytics_provider.dart';
+import 'package:kiper/shared/utils/format_utils.dart';
 
 class MonthlyBarChart extends StatelessWidget {
   final List<MonthlyTotal> data;
@@ -97,7 +98,7 @@ class MonthlyBarChart extends StatelessWidget {
               final total = data[group.x];
               final label = total.isForecast ? ' (прогноз)' : '';
               return BarTooltipItem(
-                '${_formatAmount(rod.toY)} ₽$label',
+                '${formatAmount(rod.toY, decimals: 0)} ₽$label',
                 Theme.of(context).textTheme.labelSmall!.copyWith(
                   color: colorScheme.onSurface,
                 ),

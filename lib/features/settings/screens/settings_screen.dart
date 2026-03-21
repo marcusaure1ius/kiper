@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kiper/core/database/app_database.dart';
 import 'package:kiper/core/database/database_provider.dart';
+import 'package:kiper/core/notifications/notification_service.dart';
 import 'package:kiper/features/categories/providers/categories_provider.dart';
 import 'package:kiper/features/categories/widgets/category_list_tile.dart';
 import 'package:kiper/features/settings/providers/settings_provider.dart';
@@ -67,7 +68,20 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('Включить напоминания'),
             subtitle: const Text('Уведомления о предстоящих списаниях'),
             value: remindersEnabled,
-            onChanged: (value) {
+            onChanged: (value) async {
+              if (value) {
+                final granted = await NotificationService.requestPermission();
+                if (!granted && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Разрешите уведомления в настройках телефона',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+              }
               ref.read(remindersEnabledNotifierProvider.notifier).setEnabled(value);
             },
           ),

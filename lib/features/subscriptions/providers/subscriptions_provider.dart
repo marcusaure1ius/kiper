@@ -4,6 +4,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:kiper/core/database/app_database.dart';
 import 'package:kiper/core/database/database_provider.dart';
+import 'package:kiper/core/notifications/notification_service.dart';
+import 'package:kiper/features/settings/providers/settings_provider.dart';
 import 'package:kiper/features/subscriptions/models/billing_period.dart';
 
 part 'subscriptions_provider.g.dart';
@@ -52,8 +54,9 @@ class SubscriptionsNotifier extends _$SubscriptionsNotifier {
     int reminderDaysBefore = 1,
     String? note,
   }) async {
+    final id = const Uuid().v4();
     await _db.into(_db.subscriptions).insert(SubscriptionsCompanion.insert(
-      id: const Uuid().v4(),
+      id: id,
       name: name,
       amount: amount,
       currency: currency,
@@ -67,7 +70,12 @@ class SubscriptionsNotifier extends _$SubscriptionsNotifier {
       reminderDaysBefore: Value(reminderDaysBefore),
       note: Value(note),
     ));
-    // TODO(Task 15+18): schedule notification after inserting
+    await _scheduleNotification(
+      id: id,
+      name: name,
+      nextBillingDate: nextBillingDate,
+      reminderDaysBefore: reminderDaysBefore,
+    );
   }
 
   Future<void> updateSubscription({
@@ -99,14 +107,37 @@ class SubscriptionsNotifier extends _$SubscriptionsNotifier {
         note: note,
       ),
     );
-    // TODO(Task 15+18): reschedule notification after updating
+    // Re-read and reschedule
+    final sub = await (_db.select(_db.subscriptions)..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (sub != null && sub.status == 'active') {
+      await _scheduleNotification(
+        id: sub.id,
+        name: sub.name,
+        nextBillingDate: sub.nextBillingDate,
+        reminderDaysBefore: sub.reminderDaysBefore,
+      );
+    } else {
+      await NotificationService.cancel(id.hashCode);
+    }
   }
 
   Future<void> updateStatus(String id, String status) async {
     await (_db.update(_db.subscriptions)..where((t) => t.id.equals(id))).write(
       SubscriptionsCompanion(status: Value(status)),
     );
-    // TODO(Task 15+18): cancel notification if paused/cancelled
+    if (status == 'paused' || status == 'cancelled') {
+      await NotificationService.cancel(id.hashCode);
+    } else if (status == 'active') {
+      final sub = await (_db.select(_db.subscriptions)..where((t) => t.id.equals(id))).getSingleOrNull();
+      if (sub != null) {
+        await _scheduleNotification(
+          id: sub.id,
+          name: sub.name,
+          nextBillingDate: sub.nextBillingDate,
+          reminderDaysBefore: sub.reminderDaysBefore,
+        );
+      }
+    }
   }
 
   Future<void> advanceBillingDates() async {
@@ -134,8 +165,54 @@ class SubscriptionsNotifier extends _$SubscriptionsNotifier {
         await (_db.update(_db.subscriptions)..where((t) => t.id.equals(sub.id))).write(
           SubscriptionsCompanion(nextBillingDate: Value(next)),
         );
-        // TODO(Task 15+18): reschedule notification after advancing date
+        await _scheduleNotification(
+          id: sub.id,
+          name: sub.name,
+          nextBillingDate: next,
+          reminderDaysBefore: sub.reminderDaysBefore,
+        );
       }
     }
+  }
+
+  Future<void> _scheduleNotification({
+    required String id,
+    required String name,
+    required DateTime nextBillingDate,
+    required int reminderDaysBefore,
+  }) async {
+    // Always cancel existing notification first
+    await NotificationService.cancel(id.hashCode);
+
+    if (reminderDaysBefore <= 0) return;
+
+    final remindersEnabled = ref.read(remindersEnabledNotifierProvider);
+    if (!remindersEnabled) return;
+
+    final reminderTime = ref.read(reminderTimeNotifierProvider);
+    final reminderDate = nextBillingDate.subtract(
+      Duration(days: reminderDaysBefore),
+    );
+
+    final daysWord = _daysWord(reminderDaysBefore);
+
+    await NotificationService.scheduleReminder(
+      id: id.hashCode,
+      title: 'Напоминание о подписке',
+      body: '$name — списание через $reminderDaysBefore $daysWord',
+      scheduledDate: reminderDate,
+      hour: reminderTime.hour,
+      minute: reminderTime.minute,
+      payload: id,
+    );
+  }
+
+  static String _daysWord(int n) {
+    final mod100 = n % 100;
+    final mod10 = n % 10;
+    if (mod100 >= 11 && mod100 <= 19) return 'дней';
+    if (mod10 == 1) return 'день';
+    if (mod10 >= 2 && mod10 <= 4) return 'дня';
+    return 'дней';
   }
 }

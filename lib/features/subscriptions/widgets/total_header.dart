@@ -6,6 +6,7 @@ import 'package:kiper/core/currency/exchange_rate_provider.dart';
 import 'package:kiper/core/currency/exchange_rate_service.dart';
 import 'package:kiper/core/database/app_database.dart';
 import 'package:kiper/features/subscriptions/models/billing_period.dart';
+import 'package:kiper/shared/utils/format_utils.dart';
 
 class TotalHeader extends ConsumerWidget {
   const TotalHeader({super.key, required this.subscriptions});
@@ -49,7 +50,7 @@ class TotalHeader extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '₽${totalMonthlyRub.toStringAsFixed(0)}',
+                  '${formatAmount(totalMonthlyRub, decimals: 0)} ₽',
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,

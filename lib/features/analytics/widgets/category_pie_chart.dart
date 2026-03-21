@@ -2,6 +2,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:kiper/core/database/app_database.dart';
+import 'package:kiper/shared/utils/format_utils.dart';
 
 class CategoryPieChart extends StatefulWidget {
   final Map<String?, double> breakdown;
@@ -102,7 +103,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '$label: ${_formatAmount(amount)} ₽/мес',
+                  '$label: ${formatAmount(amount, decimals: 0)} ₽/мес',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -135,10 +136,4 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
     return fallbacks[index % fallbacks.length];
   }
 
-  String _formatAmount(double value) {
-    if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(1)}K';
-    }
-    return value.toStringAsFixed(0);
-  }
 }

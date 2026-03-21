@@ -9,6 +9,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ru');
   await NotificationService.init();
+  await NotificationService.requestPermission();
   final db = await createDatabase();
 
   // Seed test data if DB is empty (debug only — remove for production)

@@ -5,6 +5,7 @@ import 'package:kiper/features/analytics/providers/analytics_provider.dart';
 import 'package:kiper/features/analytics/widgets/category_pie_chart.dart';
 import 'package:kiper/features/analytics/widgets/monthly_bar_chart.dart';
 import 'package:kiper/features/categories/providers/categories_provider.dart';
+import 'package:kiper/shared/utils/format_utils.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
@@ -123,12 +124,12 @@ class AnalyticsScreen extends ConsumerWidget {
                         const SizedBox(height: 12),
                         _SummaryRow(
                           label: 'Средний расход/мес',
-                          value: '${pastAvg.toStringAsFixed(0)} ₽',
+                          value: '${formatAmount(pastAvg, decimals: 0)} ₽',
                         ),
                         const SizedBox(height: 8),
                         _SummaryRow(
                           label: 'Прогноз на следующий месяц',
-                          value: '${forecastTotal.toStringAsFixed(0)} ₽',
+                          value: '${formatAmount(forecastTotal, decimals: 0)} ₽',
                         ),
                       ],
                     ),

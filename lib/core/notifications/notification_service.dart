@@ -40,6 +40,38 @@ class NotificationService {
     );
   }
 
+  /// Request notification permission (Android 13+).
+  /// Returns `true` if permission was granted.
+  static Future<bool> requestPermission() async {
+    try {
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (android != null) {
+        return await android.requestNotificationsPermission() ?? false;
+      }
+      // iOS permissions are handled during init via DarwinInitializationSettings
+      return true;
+    } catch (e) {
+      debugPrint('NotificationService.requestPermission error: $e');
+      return false;
+    }
+  }
+
+  /// Check whether notifications are currently enabled by the user.
+  static Future<bool> areNotificationsEnabled() async {
+    try {
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (android != null) {
+        return await android.areNotificationsEnabled() ?? false;
+      }
+      return true;
+    } catch (e) {
+      debugPrint('NotificationService.areNotificationsEnabled error: $e');
+      return false;
+    }
+  }
+
   /// Schedule a notification at the given [scheduledDate], adjusted to the
   /// specified [hour] and [minute] of that day (local time).
   static Future<void> scheduleReminder({

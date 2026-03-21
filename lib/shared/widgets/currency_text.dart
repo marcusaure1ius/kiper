@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kiper/core/currency/currency.dart';
 import 'package:kiper/core/currency/exchange_rate_provider.dart';
 import 'package:kiper/core/currency/exchange_rate_service.dart';
+import 'package:kiper/shared/utils/format_utils.dart';
 
 class CurrencyText extends ConsumerWidget {
   const CurrencyText({
@@ -24,7 +25,7 @@ class CurrencyText extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final mainText = '${currency.symbol}${amount.toStringAsFixed(2)}';
+    final mainText = '${formatAmount(amount)} ${currency.symbol}';
 
     if (currency == Currency.rub || !showRubEquivalent) {
       return Text(mainText, style: style);
@@ -41,7 +42,7 @@ class CurrencyText extends ConsumerWidget {
           children: [
             Text(mainText, style: style),
             Text(
-              '≈ ₽${rubAmount.toStringAsFixed(0)}',
+              '≈ ${formatAmount(rubAmount, decimals: 0)} ₽',
               style: rubStyle ??
                   theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
