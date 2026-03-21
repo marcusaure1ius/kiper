@@ -1,9 +1,9 @@
 // lib/features/subscriptions/widgets/subscription_card.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:sub_tracker/core/currency/currency.dart';
-import 'package:sub_tracker/core/database/app_database.dart';
-import 'package:sub_tracker/shared/widgets/currency_text.dart';
+import 'package:kiper/core/currency/currency.dart';
+import 'package:kiper/core/database/app_database.dart';
+import 'package:kiper/shared/widgets/currency_text.dart';
 
 class SubscriptionCard extends StatelessWidget {
   const SubscriptionCard({

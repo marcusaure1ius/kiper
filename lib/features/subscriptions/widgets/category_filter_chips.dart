@@ -1,8 +1,8 @@
 // lib/features/subscriptions/widgets/category_filter_chips.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sub_tracker/core/database/app_database.dart';
-import 'package:sub_tracker/features/categories/providers/categories_provider.dart';
+import 'package:kiper/core/database/app_database.dart';
+import 'package:kiper/features/categories/providers/categories_provider.dart';
 
 class CategoryFilterChips extends ConsumerWidget {
   const CategoryFilterChips({

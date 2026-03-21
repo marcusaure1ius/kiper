@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="sub_tracker"
+        android:label="Кипер"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

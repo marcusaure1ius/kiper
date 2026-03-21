@@ -1,6 +1,6 @@
 // lib/features/categories/widgets/category_list_tile.dart
 import 'package:flutter/material.dart';
-import 'package:sub_tracker/core/database/app_database.dart';
+import 'package:kiper/core/database/app_database.dart';
 
 class CategoryListTile extends StatelessWidget {
   final Category category;

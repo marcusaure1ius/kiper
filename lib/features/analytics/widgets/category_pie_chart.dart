@@ -1,7 +1,7 @@
 // lib/features/analytics/widgets/category_pie_chart.dart
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:sub_tracker/core/database/app_database.dart';
+import 'package:kiper/core/database/app_database.dart';
 
 class CategoryPieChart extends StatefulWidget {
   final Map<String?, double> breakdown;

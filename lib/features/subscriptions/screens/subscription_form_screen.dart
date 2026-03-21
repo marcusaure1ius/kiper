@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:sub_tracker/core/currency/currency.dart';
-import 'package:sub_tracker/features/categories/providers/categories_provider.dart';
-import 'package:sub_tracker/features/subscriptions/catalog/catalog_data.dart';
-import 'package:sub_tracker/features/subscriptions/catalog/catalog_picker.dart';
-import 'package:sub_tracker/features/subscriptions/models/billing_period.dart';
-import 'package:sub_tracker/features/subscriptions/providers/subscriptions_provider.dart';
+import 'package:kiper/core/currency/currency.dart';
+import 'package:kiper/features/categories/providers/categories_provider.dart';
+import 'package:kiper/features/subscriptions/catalog/catalog_data.dart';
+import 'package:kiper/features/subscriptions/catalog/catalog_picker.dart';
+import 'package:kiper/features/subscriptions/models/billing_period.dart';
+import 'package:kiper/features/subscriptions/providers/subscriptions_provider.dart';
 
 class SubscriptionFormScreen extends ConsumerStatefulWidget {
   const SubscriptionFormScreen({super.key});

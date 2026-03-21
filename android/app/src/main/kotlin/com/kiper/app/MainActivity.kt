@@ -1,4 +1,4 @@
-package com.subtracker.sub_tracker
+package com.kiper.app
 
 import io.flutter.embedding.android.FlutterActivity
 

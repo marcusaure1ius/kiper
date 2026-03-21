@@ -3,14 +3,14 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sub_tracker/core/notifications/notification_service.dart';
-import 'package:sub_tracker/core/theme/app_theme.dart';
-import 'package:sub_tracker/features/analytics/screens/analytics_screen.dart';
-import 'package:sub_tracker/features/settings/providers/settings_provider.dart';
-import 'package:sub_tracker/features/settings/screens/settings_screen.dart';
-import 'package:sub_tracker/features/subscriptions/screens/subscription_detail_screen.dart';
-import 'package:sub_tracker/features/subscriptions/screens/subscription_form_screen.dart';
-import 'package:sub_tracker/features/subscriptions/screens/subscriptions_list_screen.dart';
+import 'package:kiper/core/notifications/notification_service.dart';
+import 'package:kiper/core/theme/app_theme.dart';
+import 'package:kiper/features/analytics/screens/analytics_screen.dart';
+import 'package:kiper/features/settings/providers/settings_provider.dart';
+import 'package:kiper/features/settings/screens/settings_screen.dart';
+import 'package:kiper/features/subscriptions/screens/subscription_detail_screen.dart';
+import 'package:kiper/features/subscriptions/screens/subscription_form_screen.dart';
+import 'package:kiper/features/subscriptions/screens/subscriptions_list_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -51,14 +51,14 @@ final goRouter = GoRouter(
   ],
 );
 
-class SubTrackerApp extends ConsumerStatefulWidget {
-  const SubTrackerApp({super.key});
+class KiperApp extends ConsumerStatefulWidget {
+  const KiperApp({super.key});
 
   @override
-  ConsumerState<SubTrackerApp> createState() => _SubTrackerAppState();
+  ConsumerState<KiperApp> createState() => _KiperAppState();
 }
 
-class _SubTrackerAppState extends ConsumerState<SubTrackerApp> {
+class _KiperAppState extends ConsumerState<KiperApp> {
   @override
   void initState() {
     super.initState();
@@ -77,7 +77,7 @@ class _SubTrackerAppState extends ConsumerState<SubTrackerApp> {
     return DynamicColorBuilder(
       builder: (lightDynamic, darkDynamic) {
         return MaterialApp.router(
-          title: 'SubTracker',
+          title: 'Кипер',
           theme: AppTheme.light(lightDynamic),
           darkTheme: AppTheme.dark(darkDynamic),
           themeMode: themeMode,

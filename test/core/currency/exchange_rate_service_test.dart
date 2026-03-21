@@ -1,7 +1,7 @@
 // test/core/currency/exchange_rate_service_test.dart
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sub_tracker/core/currency/currency.dart';
-import 'package:sub_tracker/core/currency/exchange_rate_service.dart';
+import 'package:kiper/core/currency/currency.dart';
+import 'package:kiper/core/currency/exchange_rate_service.dart';
 
 void main() {
   group('ExchangeRateService', () {

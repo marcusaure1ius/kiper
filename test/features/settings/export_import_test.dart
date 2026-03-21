@@ -2,7 +2,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sub_tracker/features/settings/widgets/export_import_section.dart';
+import 'package:kiper/features/settings/widgets/export_import_section.dart';
 
 void main() {
   group('BackupData', () {

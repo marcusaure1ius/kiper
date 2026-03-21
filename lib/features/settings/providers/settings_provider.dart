@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sub_tracker/core/notifications/notification_service.dart';
+import 'package:kiper/core/notifications/notification_service.dart';
 
 // ---------------------------------------------------------------------------
 // Theme Mode

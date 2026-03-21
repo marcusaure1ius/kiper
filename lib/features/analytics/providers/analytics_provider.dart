@@ -1,10 +1,10 @@
 // lib/features/analytics/providers/analytics_provider.dart
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:sub_tracker/core/currency/currency.dart';
-import 'package:sub_tracker/core/currency/exchange_rate_provider.dart';
-import 'package:sub_tracker/core/currency/exchange_rate_service.dart';
-import 'package:sub_tracker/features/subscriptions/models/billing_period.dart';
-import 'package:sub_tracker/features/subscriptions/providers/subscriptions_provider.dart';
+import 'package:kiper/core/currency/currency.dart';
+import 'package:kiper/core/currency/exchange_rate_provider.dart';
+import 'package:kiper/core/currency/exchange_rate_service.dart';
+import 'package:kiper/features/subscriptions/models/billing_period.dart';
+import 'package:kiper/features/subscriptions/providers/subscriptions_provider.dart';
 
 part 'analytics_provider.g.dart';
 

@@ -1,6 +1,6 @@
 // lib/features/subscriptions/catalog/catalog_picker.dart
 import 'package:flutter/material.dart';
-import 'package:sub_tracker/features/subscriptions/catalog/catalog_data.dart';
+import 'package:kiper/features/subscriptions/catalog/catalog_data.dart';
 
 class CatalogPicker extends StatelessWidget {
   const CatalogPicker({super.key, required this.onSelect});

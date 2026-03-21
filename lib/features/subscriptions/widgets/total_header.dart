@@ -1,11 +1,11 @@
 // lib/features/subscriptions/widgets/total_header.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sub_tracker/core/currency/currency.dart';
-import 'package:sub_tracker/core/currency/exchange_rate_provider.dart';
-import 'package:sub_tracker/core/currency/exchange_rate_service.dart';
-import 'package:sub_tracker/core/database/app_database.dart';
-import 'package:sub_tracker/features/subscriptions/models/billing_period.dart';
+import 'package:kiper/core/currency/currency.dart';
+import 'package:kiper/core/currency/exchange_rate_provider.dart';
+import 'package:kiper/core/currency/exchange_rate_service.dart';
+import 'package:kiper/core/database/app_database.dart';
+import 'package:kiper/features/subscriptions/models/billing_period.dart';
 
 class TotalHeader extends ConsumerWidget {
   const TotalHeader({super.key, required this.subscriptions});

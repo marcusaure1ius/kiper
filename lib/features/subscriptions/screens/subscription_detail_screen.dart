@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:sub_tracker/core/currency/currency.dart';
-import 'package:sub_tracker/core/database/app_database.dart';
-import 'package:sub_tracker/core/database/database_provider.dart';
-import 'package:sub_tracker/features/subscriptions/providers/subscriptions_provider.dart';
-import 'package:sub_tracker/shared/widgets/currency_text.dart';
+import 'package:kiper/core/currency/currency.dart';
+import 'package:kiper/core/database/app_database.dart';
+import 'package:kiper/core/database/database_provider.dart';
+import 'package:kiper/features/subscriptions/providers/subscriptions_provider.dart';
+import 'package:kiper/shared/widgets/currency_text.dart';
 
 final _subscriptionByIdProvider = StreamProvider.family<Subscription?, String>((ref, id) {
   final db = ref.watch(databaseProvider);

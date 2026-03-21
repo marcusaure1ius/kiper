@@ -1,7 +1,7 @@
 // lib/core/currency/exchange_rate_service.dart
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart' as xml;
-import 'package:sub_tracker/core/currency/currency.dart';
+import 'package:kiper/core/currency/currency.dart';
 
 class ExchangeRateService {
   static const _cbrUrl = 'https://www.cbr.ru/scripts/XML_daily.asp';

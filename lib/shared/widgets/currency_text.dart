@@ -1,9 +1,9 @@
 // lib/shared/widgets/currency_text.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sub_tracker/core/currency/currency.dart';
-import 'package:sub_tracker/core/currency/exchange_rate_provider.dart';
-import 'package:sub_tracker/core/currency/exchange_rate_service.dart';
+import 'package:kiper/core/currency/currency.dart';
+import 'package:kiper/core/currency/exchange_rate_provider.dart';
+import 'package:kiper/core/currency/exchange_rate_service.dart';
 
 class CurrencyText extends ConsumerWidget {
   const CurrencyText({

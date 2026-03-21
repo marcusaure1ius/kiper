@@ -1,10 +1,10 @@
 // lib/features/analytics/screens/analytics_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sub_tracker/features/analytics/providers/analytics_provider.dart';
-import 'package:sub_tracker/features/analytics/widgets/category_pie_chart.dart';
-import 'package:sub_tracker/features/analytics/widgets/monthly_bar_chart.dart';
-import 'package:sub_tracker/features/categories/providers/categories_provider.dart';
+import 'package:kiper/features/analytics/providers/analytics_provider.dart';
+import 'package:kiper/features/analytics/widgets/category_pie_chart.dart';
+import 'package:kiper/features/analytics/widgets/monthly_bar_chart.dart';
+import 'package:kiper/features/categories/providers/categories_provider.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});

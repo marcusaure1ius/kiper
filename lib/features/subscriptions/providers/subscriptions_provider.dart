@@ -2,9 +2,9 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
-import 'package:sub_tracker/core/database/app_database.dart';
-import 'package:sub_tracker/core/database/database_provider.dart';
-import 'package:sub_tracker/features/subscriptions/models/billing_period.dart';
+import 'package:kiper/core/database/app_database.dart';
+import 'package:kiper/core/database/database_provider.dart';
+import 'package:kiper/features/subscriptions/models/billing_period.dart';
 
 part 'subscriptions_provider.g.dart';
 

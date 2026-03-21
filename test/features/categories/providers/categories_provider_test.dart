@@ -1,9 +1,9 @@
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sub_tracker/core/database/app_database.dart';
-import 'package:sub_tracker/core/database/database_provider.dart';
-import 'package:sub_tracker/features/categories/providers/categories_provider.dart';
+import 'package:kiper/core/database/app_database.dart';
+import 'package:kiper/core/database/database_provider.dart';
+import 'package:kiper/features/categories/providers/categories_provider.dart';
 
 void main() {
   late AppDatabase db;

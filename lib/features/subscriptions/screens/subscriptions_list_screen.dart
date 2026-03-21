@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sub_tracker/features/subscriptions/providers/subscriptions_provider.dart';
-import 'package:sub_tracker/features/subscriptions/widgets/subscription_card.dart';
-import 'package:sub_tracker/features/subscriptions/widgets/total_header.dart';
-import 'package:sub_tracker/features/subscriptions/widgets/category_filter_chips.dart';
+import 'package:kiper/features/subscriptions/providers/subscriptions_provider.dart';
+import 'package:kiper/features/subscriptions/widgets/subscription_card.dart';
+import 'package:kiper/features/subscriptions/widgets/total_header.dart';
+import 'package:kiper/features/subscriptions/widgets/category_filter_chips.dart';
 
 class SubscriptionsListScreen extends ConsumerStatefulWidget {
   const SubscriptionsListScreen({super.key});

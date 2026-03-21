@@ -1,9 +1,9 @@
 // test/features/analytics/providers/analytics_provider_test.dart
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sub_tracker/core/currency/currency.dart';
-import 'package:sub_tracker/core/currency/exchange_rate_service.dart';
-import 'package:sub_tracker/features/analytics/providers/analytics_provider.dart';
-import 'package:sub_tracker/features/subscriptions/models/billing_period.dart';
+import 'package:kiper/core/currency/currency.dart';
+import 'package:kiper/core/currency/exchange_rate_service.dart';
+import 'package:kiper/features/analytics/providers/analytics_provider.dart';
+import 'package:kiper/features/subscriptions/models/billing_period.dart';
 
 void main() {
   final fallbackRates = ExchangeRateService.fallbackRates;

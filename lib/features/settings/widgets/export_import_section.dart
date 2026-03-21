@@ -6,7 +6,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:sub_tracker/core/database/app_database.dart';
+import 'package:kiper/core/database/app_database.dart';
 
 // ---------------------------------------------------------------------------
 // BackupData
@@ -139,12 +139,12 @@ class ExportImportHelper {
     final jsonStr = const JsonEncoder.withIndent('  ').convert(backup.toJson());
 
     final tempDir = Directory.systemTemp;
-    final file = File('${tempDir.path}/subtracker_backup.json');
+    final file = File('${tempDir.path}/kiper_backup.json');
     await file.writeAsString(jsonStr);
 
     await SharePlus.instance.share(ShareParams(
       files: [XFile(file.path, mimeType: 'application/json')],
-      subject: 'SubTracker Backup',
+      subject: 'Кипер — Резервная копия',
     ));
   }
 
@@ -154,12 +154,12 @@ class ExportImportHelper {
     final csv = CsvExporter.generate(backup.subscriptions);
 
     final tempDir = Directory.systemTemp;
-    final file = File('${tempDir.path}/subtracker_subscriptions.csv');
+    final file = File('${tempDir.path}/kiper_subscriptions.csv');
     await file.writeAsString(csv);
 
     await SharePlus.instance.share(ShareParams(
       files: [XFile(file.path, mimeType: 'text/csv')],
-      subject: 'SubTracker Subscriptions',
+      subject: 'Кипер — Подписки',
     ));
   }
 

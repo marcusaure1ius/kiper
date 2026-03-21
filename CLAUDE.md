@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-SubTracker — Flutter Android app for tracking recurring subscriptions with multi-currency support, analytics, and notifications.
+Кипер (Kiper) — Flutter Android app for tracking recurring subscriptions with multi-currency support, analytics, and notifications.
 
 ## Build & Run
 

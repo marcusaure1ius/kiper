@@ -1,5 +1,5 @@
-import 'package:sub_tracker/core/currency/currency.dart';
-import 'package:sub_tracker/features/subscriptions/models/billing_period.dart';
+import 'package:kiper/core/currency/currency.dart';
+import 'package:kiper/features/subscriptions/models/billing_period.dart';
 
 class CatalogEntry {
   final String name;

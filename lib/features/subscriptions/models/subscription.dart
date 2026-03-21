@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:sub_tracker/core/currency/currency.dart';
-import 'package:sub_tracker/features/subscriptions/models/billing_period.dart';
-import 'package:sub_tracker/features/subscriptions/models/subscription_status.dart';
+import 'package:kiper/core/currency/currency.dart';
+import 'package:kiper/features/subscriptions/models/billing_period.dart';
+import 'package:kiper/features/subscriptions/models/subscription_status.dart';
 
 part 'subscription.freezed.dart';
 part 'subscription.g.dart';

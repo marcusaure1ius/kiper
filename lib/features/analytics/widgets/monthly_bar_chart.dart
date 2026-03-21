@@ -2,7 +2,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:sub_tracker/features/analytics/providers/analytics_provider.dart';
+import 'package:kiper/features/analytics/providers/analytics_provider.dart';
 
 class MonthlyBarChart extends StatelessWidget {
   final List<MonthlyTotal> data;

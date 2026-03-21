@@ -64,7 +64,7 @@ class NotificationService {
     if (scheduledTime.isBefore(tz.TZDateTime.now(tz.local))) return;
 
     const androidDetails = AndroidNotificationDetails(
-      'sub_tracker_reminders',
+      'kiper_reminders',
       'Напоминания о подписках',
       channelDescription: 'Уведомления о предстоящих списаниях',
       importance: Importance.high,

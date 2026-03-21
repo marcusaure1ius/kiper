@@ -1,12 +1,12 @@
 // lib/features/settings/screens/settings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sub_tracker/core/database/app_database.dart';
-import 'package:sub_tracker/core/database/database_provider.dart';
-import 'package:sub_tracker/features/categories/providers/categories_provider.dart';
-import 'package:sub_tracker/features/categories/widgets/category_list_tile.dart';
-import 'package:sub_tracker/features/settings/providers/settings_provider.dart';
-import 'package:sub_tracker/features/settings/widgets/export_import_section.dart';
+import 'package:kiper/core/database/app_database.dart';
+import 'package:kiper/core/database/database_provider.dart';
+import 'package:kiper/features/categories/providers/categories_provider.dart';
+import 'package:kiper/features/categories/widgets/category_list_tile.dart';
+import 'package:kiper/features/settings/providers/settings_provider.dart';
+import 'package:kiper/features/settings/widgets/export_import_section.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});

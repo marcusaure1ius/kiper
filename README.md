@@ -1,6 +1,6 @@
-# sub_tracker
+# Кипер
 
-A new Flutter project.
+Приложение для учёта подписок.
 
 ## Getting Started
 
