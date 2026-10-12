@@ -15,3 +15,17 @@ extension View {
         }
     }
 }
+
+/// Cross-screen navigation state (tab + home stack), so a notification tap can
+/// open a subscription from anywhere.
+@MainActor
+@Observable
+final class AppRouter {
+    var tab: AppTab = .home
+    var homePath: [Route] = []
+
+    func openSubscription(_ id: String) {
+        tab = .home
+        homePath = [.detail(id)]
+    }
+}

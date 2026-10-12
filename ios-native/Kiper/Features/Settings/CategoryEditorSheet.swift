@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Create / edit a category: name, colour, SF Symbol, with a live glass preview.
 struct CategoryEditorSheet: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
     private let existing: Category?
@@ -27,7 +27,7 @@ struct CategoryEditorSheet: View {
         _draft = State(initialValue: editing ?? Category(
             id: "cat-\(UUID().uuidString.prefix(8).lowercased())",
             name: "",
-            color: Color(hex: Self.palette[0]),
+            colorHex: Self.palette[0],
             symbol: Self.symbols[0]
         ))
     }
@@ -51,8 +51,8 @@ struct CategoryEditorSheet: View {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 14) {
                         ForEach(Self.palette, id: \.self) { hex in
                             let color = Color(hex: hex)
-                            let selected = draft.color == color
-                            Button { withAnimation(.snappy) { draft.color = color } } label: {
+                            let selected = draft.colorHex == hex
+                            Button { withAnimation(.snappy) { draft.colorHex = hex } } label: {
                                 Circle()
                                     .fill(color.gradient)
                                     .frame(width: 36, height: 36)

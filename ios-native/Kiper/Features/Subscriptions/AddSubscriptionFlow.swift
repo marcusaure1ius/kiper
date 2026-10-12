@@ -4,7 +4,7 @@ import SwiftUI
 /// Search-first catalog (like adding a medication in Health); picking a service
 /// or "own subscription" pushes the form inside the same sheet.
 struct AddSubscriptionFlow: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var path: [FormPreset] = []
     @State private var search = ""

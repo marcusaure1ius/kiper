@@ -35,7 +35,7 @@ struct SubscriptionLogo: View {
 
 /// Original amount + RUB equivalent (CLAUDE.md: always show both).
 struct AmountLabel: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     let amount: Double
     let currency: Currency
     var alignment: HorizontalAlignment = .trailing
@@ -57,7 +57,7 @@ struct AmountLabel: View {
 
 /// A row used in payment lists and the subscriptions list.
 struct SubscriptionRow: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     let subscription: Subscription
     var subtitle: String
 

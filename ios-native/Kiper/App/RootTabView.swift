@@ -5,13 +5,14 @@ enum AppTab: Hashable {
 }
 
 struct RootTabView: View {
-    @Environment(MockStore.self) private var store
-    @State private var tab: AppTab = .home
+    @Environment(AppStore.self) private var store
+    @Environment(AppRouter.self) private var router
     @State private var showPayments = false
 
     var body: some View {
+        @Bindable var router = router
         // System tab bar = Liquid Glass out of the box on iOS 26.
-        TabView(selection: $tab) {
+        TabView(selection: $router.tab) {
             Tab("Главная", systemImage: "house.fill", value: .home) {
                 HomeScreen()
             }
@@ -46,7 +47,7 @@ struct RootTabView: View {
 /// Glass accessory above the tab bar with the nearest charge day.
 /// Several charges on that day collapse into stacked logos + a RUB total.
 private struct NextPaymentAccessory: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
     var onTap: () -> Void
 
@@ -111,7 +112,7 @@ private struct NextPaymentAccessory: View {
 
 /// Up to three overlapping logos, like stacked avatars.
 private struct LogoStack: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     let events: [PaymentEvent]
 
     var body: some View {

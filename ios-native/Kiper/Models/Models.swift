@@ -74,8 +74,12 @@ enum SubscriptionStatus: String, CaseIterable, Codable {
 struct Category: Identifiable, Hashable {
     let id: String
     var name: String
-    var color: Color
+    /// 0xRRGGBB. Stored as ARGB int in backups, like the Android app.
+    var colorHex: UInt32
+    /// SF Symbol name.
     var symbol: String
+
+    var color: Color { Color(hex: colorHex) }
 }
 
 struct Subscription: Identifiable, Hashable {
@@ -93,6 +97,9 @@ struct Subscription: Identifiable, Hashable {
     var note: String?
     /// Domain used to fetch a favicon (same source as the Android catalog).
     var domain: String?
+    var createdAt: Date = .now
+    /// Catalog icon name from the Android app (kept for round-trip compatibility).
+    var icon: String?
 
     var logoURL: URL? {
         domain.flatMap { URL(string: "https://www.google.com/s2/favicons?domain=\($0)&sz=128") }

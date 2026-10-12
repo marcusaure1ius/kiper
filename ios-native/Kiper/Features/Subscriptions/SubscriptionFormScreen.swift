@@ -20,7 +20,7 @@ struct SubscriptionFormScreen: View {
 
 /// Form body without its own NavigationStack, so it can be pushed inside the add flow.
 struct SubscriptionForm: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
 
     private let existing: Subscription?
     private let showsCancel: Bool

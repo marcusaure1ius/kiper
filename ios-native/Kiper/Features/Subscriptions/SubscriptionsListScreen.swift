@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SubscriptionsListScreen: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     @State private var filter: String? = nil
     @State private var search = ""
     @State private var showAdd = false
@@ -57,7 +57,7 @@ struct SubscriptionsListScreen: View {
 }
 
 private struct TotalHeader: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     let items: [Subscription]
 
     var body: some View {
@@ -78,7 +78,7 @@ private struct TotalHeader: View {
 }
 
 private struct CategoryFilterBar: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     @Binding var selection: String?
 
     var body: some View {

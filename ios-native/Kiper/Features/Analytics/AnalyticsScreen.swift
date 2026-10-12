@@ -42,7 +42,7 @@ struct AnalyticsScreen: View {
 
 /// Bar chart of spending; tapping a bar selects that month/week for the category card below.
 private struct SpendingChartCard: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     @Environment(\.appAccent) private var accent
     @Binding var period: ChartPeriod
     @Binding var selection: DateInterval
@@ -136,7 +136,7 @@ private struct SpendingChartCard: View {
 /// Categories for the selected period. Current period: share already paid.
 /// Any other period: each category's share of that period's spending.
 private struct CategoryRingsCard: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     let period: ChartPeriod
     let interval: DateInterval
 

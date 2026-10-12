@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Past / upcoming payments for ±90 days. Sheets get Liquid Glass automatically on iOS 26.
 struct PaymentsSheet: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var mode: Mode = .future
 

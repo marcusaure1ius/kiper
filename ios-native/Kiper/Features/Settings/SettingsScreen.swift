@@ -1,10 +1,13 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsScreen: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     @AppStorage("themeMode") private var themeMode: ThemeMode = .system
     @AppStorage("backgroundStyle") private var backgroundStyle: BackgroundStyle = .lavender
-    @State private var stubAlert: String?
+    @State private var importing = false
+    @State private var pendingBackup: BackupFile?
+    @State private var importError: String?
     @State private var editingCategory: Category?
     @State private var addingCategory = false
     @State private var deletingCategory: Category?
@@ -13,6 +16,15 @@ struct SettingsScreen: View {
         @Bindable var store = store
         NavigationStack {
             Form {
+                if let error = store.loadError {
+                    Section {
+                        Label(error, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                    } footer: {
+                        Text("Сохранённые данные не прочитались, файл не тронут. Восстановите их из резервной копии через «Импорт из файла».")
+                    }
+                }
+
                 Section("Внешний вид") {
                     Picker("Тема", selection: $themeMode) {
                         ForEach(ThemeMode.allCases) { Text($0.label).tag($0) }
@@ -34,11 +46,17 @@ struct SettingsScreen: View {
                     Toggle("Включить напоминания", isOn: $store.remindersEnabled)
                     if store.remindersEnabled {
                         DatePicker("Время напоминания", selection: $store.reminderTime, displayedComponents: .hourAndMinute)
+                        if store.remindersBlocked {
+                            Link(destination: URL(string: UIApplication.openNotificationSettingsURLString)!) {
+                                Label("Уведомления запрещены — открыть настройки iOS", systemImage: "bell.slash.fill")
+                                    .foregroundStyle(.orange)
+                            }
+                        }
                     }
                 } header: {
                     Text("Напоминания")
                 } footer: {
-                    Text("Уведомления о предстоящих списаниях")
+                    Text("Уведомление приходит в это время — за столько дней до списания, сколько указано в подписке.")
                 }
 
                 Section("Категории") {
@@ -61,19 +79,44 @@ struct SettingsScreen: View {
 
                 Section {
                     ForEach([Currency.usd, .eur]) { c in
-                        LabeledContent("1 \(c.code)", value: Fmt.rub(store.rates[c] ?? 0))
+                        LabeledContent("1 \(c.code)", value: Fmt.money(store.rateSnapshot.rate(c), .rub, decimals: 2))
                             .monospacedDigit()
+                            .contentTransition(.numericText())
                     }
+                    Button {
+                        Task { await store.refreshRates() }
+                    } label: {
+                        HStack {
+                            Label("Обновить курсы", systemImage: "arrow.clockwise")
+                            Spacer()
+                            if store.isRefreshingRates { ProgressView() }
+                        }
+                    }
+                    .disabled(store.isRefreshingRates)
                 } header: {
                     Text("Курсы валют")
                 } footer: {
-                    Text("Прототип: резервные курсы. В рабочей версии — ЦБ РФ.")
+                    Text(ratesFooter)
                 }
 
-                Section("Данные") {
-                    Button("Экспорт в JSON", systemImage: "square.and.arrow.up") { stubAlert = "Экспорт в JSON" }
-                    Button("Экспорт в CSV", systemImage: "tablecells") { stubAlert = "Экспорт в CSV" }
-                    Button("Импорт", systemImage: "square.and.arrow.down") { stubAlert = "Импорт" }
+                Section {
+                    ShareLink(
+                        item: JSONExport(data: (try? BackupMapper.encode(store.backup())) ?? Data()),
+                        preview: SharePreview("Резервная копия Кипера", image: Image(systemName: "doc.text"))
+                    ) {
+                        Label("Экспорт в JSON", systemImage: "square.and.arrow.up")
+                    }
+                    ShareLink(
+                        item: CSVExport(text: CSVCodec.encode(store.subscriptions)),
+                        preview: SharePreview("Подписки Кипера (CSV)", image: Image(systemName: "tablecells"))
+                    ) {
+                        Label("Экспорт в CSV", systemImage: "tablecells")
+                    }
+                    Button("Импорт из файла", systemImage: "square.and.arrow.down") { importing = true }
+                } header: {
+                    Text("Данные")
+                } footer: {
+                    Text("Формат совместим с Кипером для Android. JSON переносит подписки и категории, CSV — только подписки.")
                 }
 
                 Section {
@@ -96,12 +139,62 @@ struct SettingsScreen: View {
             } message: {
                 Text("Подписки этой категории останутся без категории.")
             }
-            .alert(stubAlert ?? "", isPresented: Binding(get: { stubAlert != nil }, set: { if !$0 { stubAlert = nil } })) {
+            .fileImporter(isPresented: $importing, allowedContentTypes: [.json, .commaSeparatedText, .plainText]) { result in
+                handleImport(result)
+            }
+            .confirmationDialog(
+                "Импорт резервной копии",
+                isPresented: Binding(get: { pendingBackup != nil }, set: { if !$0 { pendingBackup = nil } }),
+                titleVisibility: .visible
+            ) {
+                if let file = pendingBackup {
+                    Button("Добавить к текущим") { finishImport(file, mode: .merge) }
+                    Button("Заменить все данные", role: .destructive) { finishImport(file, mode: .replace) }
+                }
+            } message: {
+                if let file = pendingBackup {
+                    Text("В файле \(file.subscriptions.count) \(Fmt.plural(file.subscriptions.count, "подписка", "подписки", "подписок")) и \(file.categories.count) \(Fmt.plural(file.categories.count, "категория", "категории", "категорий")). При добавлении совпадающие записи обновятся.")
+                }
+            }
+            .alert("Не удалось импортировать", isPresented: Binding(get: { importError != nil }, set: { if !$0 { importError = nil } })) {
                 Button("OK") {}
             } message: {
-                Text("Будет в следующей версии — сейчас прототип на моковых данных.")
+                Text(importError ?? "")
             }
         }
+    }
+
+    private var ratesFooter: String {
+        let s = store.rateSnapshot
+        if s.isFallback { return "Резервные курсы: пока нет данных от ЦБ РФ." }
+        let date = Fmt.smartDate(s.quoteDate ?? s.fetchedAt)
+        return "Курс ЦБ РФ на \(date)" + (date.hasSuffix(".") ? "" : ".")
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        do {
+            let url = try result.get()
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            let data = try Data(contentsOf: url)
+            let text = String(decoding: data, as: UTF8.self)
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: "\u{FEFF}")))
+            if url.pathExtension.lowercased() == "csv" || !trimmed.hasPrefix("{") {
+                let result = store.importCSV(text)
+                guard result.subscriptions > 0 else { throw BackupError.unreadable }
+                store.show("Импортировано: \(result.subscriptions) \(Fmt.plural(result.subscriptions, "подписка", "подписки", "подписок"))")
+            } else {
+                pendingBackup = try BackupMapper.decode(data)
+            }
+        } catch {
+            importError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
+    private func finishImport(_ file: BackupFile, mode: AppStore.ImportMode) {
+        let result = withAnimation { store.importBackup(file, mode: mode) }
+        store.show("Импортировано: \(result.subscriptions) \(Fmt.plural(result.subscriptions, "подписка", "подписки", "подписок"))")
+        pendingBackup = nil
     }
 }
 

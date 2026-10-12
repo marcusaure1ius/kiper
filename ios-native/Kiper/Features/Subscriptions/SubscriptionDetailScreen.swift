@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SubscriptionDetailScreen: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     let subscriptionId: String
     @State private var editing = false

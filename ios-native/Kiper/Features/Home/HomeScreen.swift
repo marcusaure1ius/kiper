@@ -1,14 +1,15 @@
 import SwiftUI
 
 struct HomeScreen: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     @State private var showForm = false
     @State private var showPayments = false
-    @State private var path: [Route] = []
+    @Environment(AppRouter.self) private var router
     @Namespace private var glass
 
     var body: some View {
-        NavigationStack(path: $path) {
+        @Bindable var router = router
+        NavigationStack(path: $router.homePath) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     MonthSummaryCard()
@@ -17,7 +18,7 @@ struct HomeScreen: View {
                     GlassEffectContainer(spacing: 12) {
                         HStack(spacing: 12) {
                             Button {
-                                path.append(.list)
+                                router.homePath.append(.list)
                             } label: {
                                 Label("Подписки", systemImage: "list.bullet")
                                     .frame(maxWidth: .infinity)
@@ -85,7 +86,7 @@ struct HomeScreen: View {
 
 /// Glass summary for the current month — the hero element of the home screen.
 private struct MonthSummaryCard: View {
-    @Environment(MockStore.self) private var store
+    @Environment(AppStore.self) private var store
     @Environment(\.appAccent) private var accent
 
     var body: some View {
