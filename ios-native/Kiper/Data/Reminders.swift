@@ -2,12 +2,16 @@ import Foundation
 import UserNotifications
 
 /// Local reminders before charges (mirrors `_scheduleNotification` in the Android app).
-/// One pending request per subscription; the whole set is rebuilt on every change.
+/// Up to `perSubscription` pending requests per subscription; the whole set is rebuilt on every change.
 enum Reminders {
     static let prefix = "sub-"
     static let subscriptionIdKey = "subscriptionId"
     /// iOS keeps at most 64 pending local notifications per app.
     static let limit = 60
+
+    /// Upcoming charges per subscription that get a reminder (so reminders keep
+    /// coming even if the app isn't opened for a while).
+    static let perSubscription = 3
 
     struct Plan: Equatable {
         let id: String
@@ -26,20 +30,17 @@ enum Reminders {
     ) -> [Plan] {
         var plans: [Plan] = []
         for sub in subscriptions where sub.status == .active && sub.reminderDaysBefore > 0 {
-            // First charge whose reminder is still in the future.
-            var charge = sub.nextBillingDate
-            for _ in 0..<3 {
-                if let fire = fireDate(for: charge, daysBefore: sub.reminderDaysBefore, hour: hour, minute: minute, calendar: calendar), fire > now {
-                    plans.append(Plan(
-                        id: prefix + sub.id,
-                        subscriptionId: sub.id,
-                        fireDate: fire,
-                        title: "Напоминание о подписке",
-                        body: body(for: sub, daysBefore: sub.reminderDaysBefore)
-                    ))
-                    break
-                }
-                charge = sub.billingPeriod.next(after: charge, customDays: sub.customPeriodDays)
+            // Next few charges whose reminder is still in the future.
+            let charges = Schedule.upcoming(of: sub, count: perSubscription + 1, calendar: calendar)
+            let fires = charges.compactMap { fireDate(for: $0, daysBefore: sub.reminderDaysBefore, hour: hour, minute: minute, calendar: calendar) }
+            for (n, fire) in fires.filter({ $0 > now }).prefix(perSubscription).enumerated() {
+                plans.append(Plan(
+                    id: "\(prefix)\(sub.id)-\(n)",
+                    subscriptionId: sub.id,
+                    fireDate: fire,
+                    title: "Напоминание о подписке",
+                    body: body(for: sub, daysBefore: sub.reminderDaysBefore)
+                ))
             }
         }
         return Array(plans.sorted { $0.fireDate < $1.fireDate }.prefix(limit))
@@ -72,10 +73,12 @@ enum Reminders {
     static func apply(_ plans: [Plan]) async {
         let center = UNUserNotificationCenter.current()
         let pending = await center.pendingNotificationRequests()
+        guard !Task.isCancelled else { return }
         center.removePendingNotificationRequests(withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix(prefix) })
 
         let calendar = Calendar.current
         for plan in plans {
+            guard !Task.isCancelled else { return }
             let content = UNMutableNotificationContent()
             content.title = plan.title
             content.body = plan.body

@@ -18,7 +18,15 @@ struct Persistence: Sendable {
         return try BackupMapper.decode(Data(contentsOf: url))
     }
 
+    /// Moves an unreadable file aside (`kiper.broken-<timestamp>.json`) and returns its URL.
+    func quarantine(now: Date = .now) throws -> URL {
+        let stamp = Int(now.timeIntervalSince1970)
+        let target = url.deletingLastPathComponent().appendingPathComponent("kiper.broken-\(stamp).json")
+        try FileManager.default.moveItem(at: url, to: target)
+        return target
+    }
+
     func save(_ file: BackupFile) throws {
-        try BackupMapper.encode(file).write(to: url, options: [.atomic, .completeFileProtection])
+        try BackupMapper.encode(file).write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     }
 }

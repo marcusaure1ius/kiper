@@ -8,7 +8,8 @@ struct RemindersTests {
         let plans = Reminders.plan(subscriptions: [sub], hour: 10, minute: 30, now: day(2026, 10, 1))
         let plan = try #require(plans.first)
         #expect(plan.fireDate == Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 17, hour: 10, minute: 30)))
-        #expect(plan.id == "sub-n" && plan.subscriptionId == "n")
+        #expect(plan.id == "sub-n-0" && plan.subscriptionId == "n")
+        #expect(plans.count == Reminders.perSubscription, "a few upcoming charges get reminders")
         #expect(plan.body == "Netflix — списание через 3 дня, 22,99 $")
     }
 
@@ -28,7 +29,7 @@ struct RemindersTests {
             makeSub(id: "off", next: next, start: start, reminder: 0),
             makeSub(id: "on", next: next, start: start, reminder: 1),
         ]
-        #expect(Reminders.plan(subscriptions: subs, hour: 9, minute: 0, now: now).map(\.subscriptionId) == ["on"])
+        #expect(Set(Reminders.plan(subscriptions: subs, hour: 9, minute: 0, now: now).map(\.subscriptionId)) == ["on"])
     }
 
     @Test func tomorrowWordingAndLimit() {

@@ -22,13 +22,40 @@ struct StoreTests {
         #expect(second.category(for: "cat-x")?.symbol == "briefcase.fill")
     }
 
-    @Test func brokenFileIsNotOverwritten() throws {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("kiper-\(UUID().uuidString).json")
+    @Test func brokenFileIsKeptAsideAndAppKeepsWorking() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("kiper-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let url = dir.appendingPathComponent("kiper.json")
         try Data("{broken".utf8).write(to: url)
+
         let store = makeStore(file: url)
-        #expect(store.loadError != nil)
+        #expect(store.loadError?.contains("kiper.broken-") == true)
+        let copies = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasPrefix("kiper.broken-") }
+        #expect(copies.count == 1)
+        #expect(try String(contentsOf: dir.appendingPathComponent(copies[0]), encoding: .utf8) == "{broken")
+
         store.upsertCategory(Category(id: "c", name: "X", colorHex: 0, symbol: "star"))
-        #expect(try String(contentsOf: url, encoding: .utf8) == "{broken")
+        #expect(makeStore(file: url).category(for: "c") != nil, "new edits are saved")
+    }
+
+    @Test func unreadableRowsSurviveSave() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("kiper-\(UUID().uuidString).json")
+        let json = #"{"version":1,"exportedAt":"","categories":[],"subscriptions":[{"id":"bad","name":"Bad","amount":1,"currency":"RUB","billingPeriod":"monthly","nextBillingDate":"not a date","startDate":"also not"}]}"#
+        try Data(json.utf8).write(to: url)
+        let store = makeStore(file: url)
+        #expect(store.subscriptions.isEmpty)
+        store.upsertCategory(Category(id: "c", name: "X", colorHex: 0, symbol: "star"))
+        let saved = try BackupMapper.decode(Data(contentsOf: url))
+        #expect(saved.subscriptions.map(\.id) == ["bad"])
+    }
+
+    @Test func csvImportKeepsLogoAndCreationDate() {
+        let store = makeStore(seed: true)
+        let created = store.subscription(id: "test-1")!.createdAt
+        store.importCSV(CSVCodec.encode(store.subscriptions))
+        #expect(store.subscription(id: "test-1")?.domain == "netflix.com")
+        // The backup format stores milliseconds.
+        #expect(abs(store.subscription(id: "test-1")!.createdAt.timeIntervalSince(created)) < 0.001)
     }
 
     @Test func deletingCategoryDetachesSubscriptions() {

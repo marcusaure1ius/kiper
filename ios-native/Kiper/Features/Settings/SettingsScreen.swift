@@ -21,7 +21,7 @@ struct SettingsScreen: View {
                         Label(error, systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(.orange)
                     } footer: {
-                        Text("Сохранённые данные не прочитались, файл не тронут. Восстановите их из резервной копии через «Импорт из файла».")
+                        Text("Сохранённые данные не прочитались. Восстановите их из резервной копии через «Импорт из файла» — новые изменения уже сохраняются.")
                     }
                 }
 
@@ -193,7 +193,10 @@ struct SettingsScreen: View {
 
     private func finishImport(_ file: BackupFile, mode: AppStore.ImportMode) {
         let result = withAnimation { store.importBackup(file, mode: mode) }
-        store.show("Импортировано: \(result.subscriptions) \(Fmt.plural(result.subscriptions, "подписка", "подписки", "подписок"))")
+        let skipped = result.skipped > 0 ? ", пропущено \(result.skipped)" : ""
+        store.show("Импортировано: \(result.subscriptions) \(Fmt.plural(result.subscriptions, "подписка", "подписки", "подписок"))\(skipped)",
+                   symbol: result.skipped > 0 ? "exclamationmark.circle.fill" : "checkmark.circle.fill",
+                   tint: result.skipped > 0 ? .orange : .green)
         pendingBackup = nil
     }
 }

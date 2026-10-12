@@ -92,18 +92,21 @@ enum BackupMapper {
     /// and full ISO 8601 with a zone.
     static func date(from string: String) -> Date? {
         let trimmed = string.trimmingCharacters(in: .whitespaces)
-        if let d = try? Date(trimmed, strategy: .iso8601) { return d }
-        let iso = ISO8601DateFormatter()
-        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let d = iso.date(from: trimmed) { return d }
-        // Local time without zone; Dart may emit 3 or 6 fractional digits.
-        let base = String(trimmed.prefix(19))
+        // Only strings that carry a zone are absolute; everything else is local time
+        // (a bare "2026-10-13" must not become UTC midnight = previous day west of UTC).
+        if trimmed.range(of: #"(Z|[+-]\d{2}:?\d{2})$"#, options: .regularExpression) != nil, trimmed.count > 10 {
+            if let d = try? Date(trimmed, strategy: .iso8601) { return d }
+            let iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let d = iso.date(from: trimmed) { return d }
+        }
+        // Local time without zone; Dart may emit 3 or 6 fractional digits (keep millis).
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.timeZone = .current
-        for format in ["yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd HH:mm:ss"] {
+        for (format, length) in [("yyyy-MM-dd'T'HH:mm:ss.SSS", 23), ("yyyy-MM-dd'T'HH:mm:ss", 19), ("yyyy-MM-dd HH:mm:ss", 19)] {
             f.dateFormat = format
-            if let d = f.date(from: base) { return d }
+            if let d = f.date(from: String(trimmed.prefix(length))) { return d }
         }
         f.dateFormat = "yyyy-MM-dd"
         return f.date(from: String(trimmed.prefix(10)))

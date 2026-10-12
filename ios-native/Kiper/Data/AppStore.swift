@@ -12,6 +12,9 @@ final class AppStore {
     private(set) var isRefreshingRates = false
     /// Set when the stored file could not be read; shown once in Settings.
     private(set) var loadError: String?
+    /// Stored rows that couldn't be parsed (bad dates etc.). Written back untouched,
+    /// so saving never deletes data we failed to understand.
+    private var unparsed: [SubscriptionDTO] = []
 
     var remindersEnabled: Bool {
         didSet {
@@ -60,7 +63,9 @@ final class AppStore {
         do {
             if let file = try persistence?.load() {
                 categories = file.categories.map(BackupMapper.category)
-                subscriptions = file.subscriptions.compactMap(BackupMapper.subscription)
+                for dto in file.subscriptions {
+                    if let sub = BackupMapper.subscription(dto) { subscriptions.append(sub) } else { unparsed.append(dto) }
+                }
             } else {
                 // First launch: seed categories (always) and demo subscriptions (debug only).
                 categories = SeedData.categories
@@ -68,8 +73,11 @@ final class AppStore {
                 save()
             }
         } catch {
-            // Never overwrite a file we failed to read; start empty in memory.
-            loadError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            // Keep the unreadable file as a side copy, then work normally (so edits
+            // made from now on are saved, and nothing old is lost).
+            let reason = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            let copy = persistence.flatMap { try? $0.quarantine() }
+            loadError = copy.map { "\(reason) Исходный файл сохранён как «\($0.lastPathComponent)»." } ?? reason
             categories = SeedData.categories
         }
         advanceBillingDates()
@@ -159,12 +167,8 @@ final class AppStore {
         let today = Calendar.current.startOfDay(for: now)
         var changed = false
         for i in subscriptions.indices where subscriptions[i].status == .active {
-            var next = subscriptions[i].nextBillingDate
-            var guardSteps = 0
-            while Calendar.current.startOfDay(for: next) < today && guardSteps < 5000 {
-                next = subscriptions[i].billingPeriod.next(after: next, customDays: subscriptions[i].customPeriodDays)
-                guardSteps += 1
-            }
+            guard Calendar.current.startOfDay(for: subscriptions[i].nextBillingDate) < today else { continue }
+            let next = Schedule.firstCharge(of: subscriptions[i], onOrAfter: today)
             if next != subscriptions[i].nextBillingDate {
                 subscriptions[i].nextBillingDate = next
                 changed = true
@@ -188,7 +192,7 @@ final class AppStore {
     }
 
     private func save() {
-        guard let persistence, loadError == nil else { return }
+        guard let persistence else { return }
         do {
             try persistence.save(backup())
         } catch {
@@ -222,8 +226,12 @@ final class AppStore {
         let plans = remindersEnabled
             ? Reminders.plan(subscriptions: subscriptions, hour: c.hour ?? 10, minute: c.minute ?? 0)
             : []
-        reminderTask?.cancel()
+        // Chain runs so two rebuilds never interleave (remove/add of an older plan
+        // landing after a newer one); a superseded run stops at its next check.
+        let previous = reminderTask
+        previous?.cancel()
         reminderTask = Task {
+            await previous?.value
             guard !Task.isCancelled else { return }
             if remindersEnabled {
                 remindersBlocked = await Reminders.authorizationStatus() == .denied
@@ -243,7 +251,9 @@ final class AppStore {
     // MARK: - Backup
 
     func backup(now: Date = .now) -> BackupFile {
-        BackupMapper.file(subscriptions: subscriptions, categories: categories, now: now)
+        var file = BackupMapper.file(subscriptions: subscriptions, categories: categories, now: now)
+        file.subscriptions += unparsed
+        return file
     }
 
     enum ImportMode { case replace, merge }
@@ -251,6 +261,8 @@ final class AppStore {
     struct ImportResult: Equatable {
         var subscriptions: Int
         var categories: Int
+        /// Rows skipped because they couldn't be read (bad dates).
+        var skipped: Int = 0
     }
 
     /// Imports a JSON backup (Android or iOS). `replace` wipes current data first;
@@ -263,6 +275,7 @@ final class AppStore {
         case .replace:
             categories = cats
             subscriptions = subs
+            unparsed = []
         case .merge:
             for c in cats {
                 if let i = categories.firstIndex(where: { $0.id == c.id }) { categories[i] = c } else { categories.append(c) }
@@ -276,16 +289,24 @@ final class AppStore {
         for i in subscriptions.indices where subscriptions[i].categoryId.map({ !known.contains($0) }) ?? false {
             subscriptions[i].categoryId = nil
         }
-        loadError = nil
+        if mode == .replace { loadError = nil }
         advanceBillingDates()
         didChange()
-        return ImportResult(subscriptions: subs.count, categories: cats.count)
+        return ImportResult(subscriptions: subs.count, categories: cats.count, skipped: file.subscriptions.count - subs.count)
     }
 
     /// CSV carries subscriptions only; rows are upserted by id (Android behaviour).
     @discardableResult
     func importCSV(_ text: String) -> ImportResult {
-        let subs = CSVCodec.decode(text)
+        // CSV has no icon/domain/createdAt — keep them from rows we already have.
+        let subs = CSVCodec.decode(text).map { row -> Subscription in
+            guard let old = subscription(id: row.id) else { return row }
+            var merged = row
+            merged.icon = old.icon
+            merged.domain = old.domain ?? row.domain
+            merged.createdAt = old.createdAt
+            return merged
+        }
         let file = BackupFile(exportedAt: "", subscriptions: subs.map(BackupMapper.dto), categories: [])
         return importBackup(file, mode: .merge)
     }
@@ -376,37 +397,7 @@ final class AppStore {
         return buckets.map { PeriodTotal(start: $0, amount: sums[$0] ?? 0, isForecast: $0 >= current) }
     }
 
-    /// Billing dates in `[from, to)`, anchored on `nextBillingDate` and stepping by multiples
-    /// of the period in both directions (never before `startDate`). Multiples avoid
-    /// day-of-month drift such as Jan 31 → Feb 28 → Mar 28.
     func billingDates(of sub: Subscription, from: Date, to: Date) -> [Date] {
-        let cal = Calendar.current
-        let lower = max(from, cal.startOfDay(for: sub.startDate))
-        // Nothing is charged between today and the next billing date: past occurrences
-        // are history (before today), future ones start exactly at nextBillingDate.
-        let today = cal.startOfDay(for: .now)
-        let next = cal.startOfDay(for: sub.nextBillingDate)
-        var n = 0
-        while n > -10_000, step(sub, n - 1, cal) >= lower { n -= 1 }
-        var result: [Date] = []
-        while n < 10_000 {
-            let date = step(sub, n, cal)
-            if date >= to { break }
-            if date >= lower && !(date >= today && date < next) { result.append(date) }
-            n += 1
-        }
-        return result
-    }
-
-    private func step(_ sub: Subscription, _ n: Int, _ cal: Calendar) -> Date {
-        let s = sub.nextBillingDate
-        return switch sub.billingPeriod {
-        case .weekly: cal.date(byAdding: .day, value: 7 * n, to: s)!
-        case .monthly: cal.date(byAdding: .month, value: n, to: s)!
-        case .quarterly: cal.date(byAdding: .month, value: 3 * n, to: s)!
-        case .semiannual: cal.date(byAdding: .month, value: 6 * n, to: s)!
-        case .annual: cal.date(byAdding: .year, value: n, to: s)!
-        case .custom: cal.date(byAdding: .day, value: max(sub.customPeriodDays ?? 30, 1) * n, to: s)!
-        }
+        Schedule.dates(of: sub, from: from, to: to)
     }
 }

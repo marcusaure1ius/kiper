@@ -68,6 +68,13 @@ struct BackupTests {
         #expect(decoded == original)
     }
 
+    @Test func plainDatesAreLocal() throws {
+        let d = try #require(BackupMapper.date(from: "2026-10-13"))
+        #expect(Calendar.current.dateComponents([.year, .month, .day, .hour], from: d) == DateComponents(year: 2026, month: 10, day: 13, hour: 0))
+        let utc = try #require(BackupMapper.date(from: "2026-10-13T00:00:00Z"))
+        #expect(utc.timeIntervalSince1970 == 1_791_849_600)
+    }
+
     @Test func rejectsNewerVersion() {
         #expect(throws: BackupError.unsupportedVersion(2)) {
             try BackupMapper.decode(Data(#"{"version": 2, "exportedAt": "", "subscriptions": [], "categories": []}"#.utf8))
