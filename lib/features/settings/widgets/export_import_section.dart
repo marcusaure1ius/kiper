@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:kiper/core/database/app_database.dart';
+import 'package:kiper/features/subscriptions/models/subscription_status.dart';
 
 // ---------------------------------------------------------------------------
 // BackupData
@@ -238,10 +239,17 @@ class ExportImportHelper {
         customPeriodDays: Value(sub['customPeriodDays'] as int?),
         categoryId: Value(sub['categoryId'] as String?),
         reminderDaysBefore: Value(sub['reminderDaysBefore'] as int? ?? 1),
+        status: Value(_status(sub['status'])),
         note: Value(sub['note'] as String?),
       ),
       mode: mode,
     );
+  }
+
+  /// Backup status string, validated against [SubscriptionStatus]; unknown → active.
+  static String _status(Object? raw) {
+    final value = raw?.toString();
+    return SubscriptionStatus.values.any((s) => s.name == value) ? value! : SubscriptionStatus.active.name;
   }
 
   /// Import subscriptions from CSV (basic, no category import).
@@ -289,6 +297,7 @@ class ExportImportHelper {
               reminderDaysBefore: Value(
                 int.tryParse(sub['reminderDaysBefore']?.toString() ?? '1') ?? 1,
               ),
+              status: Value(_status(sub['status'])),
               note: Value(sub['note'] as String?),
             ),
             mode: InsertMode.insertOrReplace,
