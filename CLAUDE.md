@@ -47,3 +47,19 @@ Feature-first + Riverpod. Code in `lib/features/{feature}/` with models/provider
 - Requires Java 17 (set in `android/gradle.properties` via `org.gradle.java.home`)
 - Core library desugaring enabled in `android/app/build.gradle.kts`
 - `sqlite3_flutter_libs` required for SQLite native library on Android
+
+## iOS native app (`ios-native/`)
+
+Separate SwiftUI app for iOS 26 (Liquid Glass), no dependencies. See `ios-native/README.md`.
+
+```bash
+cd ios-native
+xcodebuild -project Kiper.xcodeproj -scheme Kiper -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+xcodebuild -project Kiper.xcodeproj -scheme Kiper -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+```
+
+- Folder-synchronized Xcode groups: new files in `Kiper/` or `KiperTests/` need no pbxproj edits
+- State lives in `Kiper/Data/AppStore.swift` (`@Observable`, `@MainActor`); persisted as JSON in the Android backup format (`Kiper/Data/Backup.swift`) — keep it compatible with `lib/features/settings/widgets/export_import_section.dart`
+- Schedule rule: future charges start at `nextBillingDate`; history goes back to `startDate`
+- Accent colour comes from the selected background palette (`PaletteAccent`, `\.appAccent`) — don't use `Color.accentColor` directly
+- Russian-only UI; `Fmt` in `Kiper/Shared/Formatting.swift` for money/dates/plurals
