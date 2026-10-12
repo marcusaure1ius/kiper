@@ -9,6 +9,7 @@
 /* Begin PBXFileReference section */
 		A10000000000000000000001 /* Kiper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kiper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000000000000000000001 /* KiperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KiperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C10000000000000000000001 /* KiperUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KiperUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -22,9 +23,21 @@
 			path = KiperTests;
 			sourceTree = "<group>";
 		};
+		C10000000000000000000002 /* KiperUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = KiperUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		C10000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B10000000000000000000003 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -47,6 +60,7 @@
 			children = (
 				A10000000000000000000002 /* Kiper */,
 				B10000000000000000000002 /* KiperTests */,
+				C10000000000000000000002 /* KiperUITests */,
 				A10000000000000000000005 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -56,6 +70,7 @@
 			children = (
 				A10000000000000000000001 /* Kiper.app */,
 				B10000000000000000000001 /* KiperTests.xctest */,
+				C10000000000000000000001 /* KiperUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -104,6 +119,27 @@
 			productReference = B10000000000000000000001 /* KiperTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		C10000000000000000000006 /* KiperUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C10000000000000000000010 /* Build configuration list for PBXNativeTarget "KiperUITests" */;
+			buildPhases = (
+				C10000000000000000000007 /* Sources */,
+				C10000000000000000000003 /* Frameworks */,
+				C10000000000000000000008 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C10000000000000000000009 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C10000000000000000000002 /* KiperUITests */,
+			);
+			name = KiperUITests;
+			productName = KiperUITests;
+			productReference = C10000000000000000000001 /* KiperUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -118,6 +154,10 @@
 						CreatedOnToolsVersion = 26.3;
 					};
 					B10000000000000000000006 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = A10000000000000000000006;
+					};
+					C10000000000000000000006 = {
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = A10000000000000000000006;
 					};
@@ -139,11 +179,19 @@
 			targets = (
 				A10000000000000000000006 /* Kiper */,
 				B10000000000000000000006 /* KiperTests */,
+				C10000000000000000000006 /* KiperUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXContainerItemProxy section */
+		C10000000000000000000011 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000009 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000006;
+			remoteInfo = Kiper;
+		};
 		B10000000000000000000011 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A10000000000000000000009 /* Project object */;
@@ -154,6 +202,11 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXTargetDependency section */
+		C10000000000000000000009 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000006 /* Kiper */;
+			targetProxy = C10000000000000000000011 /* PBXContainerItemProxy */;
+		};
 		B10000000000000000000009 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A10000000000000000000006 /* Kiper */;
@@ -162,6 +215,13 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
+		C10000000000000000000008 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B10000000000000000000008 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -179,6 +239,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		C10000000000000000000007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B10000000000000000000007 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -196,6 +263,38 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		C10000000000000000000012 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.kiper.ios.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Kiper;
+			};
+			name = Debug;
+		};
+		C10000000000000000000013 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.kiper.ios.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Kiper;
+			};
+			name = Release;
+		};
 		B10000000000000000000012 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -334,6 +433,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		C10000000000000000000010 /* Build configuration list for PBXNativeTarget "KiperUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C10000000000000000000012 /* Debug */,
+				C10000000000000000000013 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		B10000000000000000000010 /* Build configuration list for PBXNativeTarget "KiperTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

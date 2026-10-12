@@ -10,14 +10,33 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         return true
     }
 
+    // Completion-handler variants on purpose: the `async` versions complete on a
+    // background executor, which trips a UIKit main-thread assertion and kills
+    // the app when a reminder is tapped.
+
     /// Show reminders as banners even when the app is open.
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list, .sound])
     }
 
     /// Tap on a reminder → open that subscription.
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-        guard let id = response.notification.request.content.userInfo[Reminders.subscriptionIdKey] as? String else { return }
-        await MainActor.run { self.router.openSubscription(id) }
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let id = response.notification.request.content.userInfo[Reminders.subscriptionIdKey] as? String
+        // Called exactly once, on main — UIKit requires that.
+        nonisolated(unsafe) let done = completionHandler
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                if let id { self.router.openSubscription(id) }
+            }
+            done()
+        }
     }
 }
