@@ -25,9 +25,19 @@ enum ThemeMode: String, CaseIterable, Identifiable {
 @main
 struct KiperApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @State private var store = AppStore()
+    @State private var store = KiperApp.makeStore()
     @AppStorage("themeMode") private var themeMode: ThemeMode = .system
     @Environment(\.scenePhase) private var scenePhase
+
+    /// `-KiperEmptyState` (DEBUG launch argument): fresh in-memory store, for checking empty screens.
+    private static func makeStore() -> AppStore {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-KiperEmptyState") {
+            return AppStore(persistence: nil, seedDemoData: false)
+        }
+        #endif
+        return AppStore()
+    }
 
     var body: some Scene {
         WindowGroup {

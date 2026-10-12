@@ -108,6 +108,13 @@ private struct SpendingChartCard: View {
                 }
             }
             .frame(height: 220)
+            .overlay {
+                if data.allSatisfy({ $0.amount == 0 }) {
+                    Label("Пока нет списаний", systemImage: "chart.bar")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
             .sensoryFeedback(.selection, trigger: selection)
 
             Picker("Период", selection: $period) {

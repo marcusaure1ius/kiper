@@ -29,7 +29,21 @@ struct SubscriptionsListScreen: View {
                     .scrollReveal()
                 }
                 if items.isEmpty {
-                    ContentUnavailableView.search(text: search)
+                    if !search.isEmpty {
+                        ContentUnavailableView.search(text: search)
+                    } else if filter != nil {
+                        ContentUnavailableView("В этой категории пусто", systemImage: "tray",
+                                               description: Text("Выберите другую категорию или добавьте подписку."))
+                    } else {
+                        ContentUnavailableView {
+                            Label("Пока нет подписок", systemImage: "tray")
+                        } description: {
+                            Text("Добавьте первую — Кипер напомнит о списании заранее.")
+                        } actions: {
+                            Button("Добавить подписку", systemImage: "plus") { showAdd = true }
+                                .buttonStyle(.glassProminent)
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 16)

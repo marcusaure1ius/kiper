@@ -69,6 +69,27 @@ struct HomeScreen: View {
             .padding(.bottom, 8)
 
             let events = Array(store.futurePayments(days: 30).prefix(6))
+            if events.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: store.active.isEmpty ? "tray" : "checkmark.seal")
+                        .font(.system(size: 34))
+                        .foregroundStyle(.tint)
+                        .symbolEffect(.bounce, value: store.active.count)
+                    Text(store.active.isEmpty ? "Пока нет подписок" : "В ближайший месяц списаний нет")
+                        .font(.subheadline.weight(.semibold))
+                    if store.active.isEmpty {
+                        Text("Добавьте первую — Кипер напомнит о списании заранее.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                        Button("Добавить подписку", systemImage: "plus") { showForm = true }
+                            .buttonStyle(.glassProminent)
+                            .padding(.top, 4)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+            }
             ForEach(events) { event in
                 NavigationLink(value: Route.detail(event.subscription.id)) {
                     SubscriptionRow(subscription: event.subscription, subtitle: "\(Fmt.relative(event.date)) · \(Fmt.day(event.date))")
