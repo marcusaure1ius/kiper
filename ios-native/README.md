@@ -31,6 +31,7 @@ xcodebuild -project Kiper.xcodeproj -scheme Kiper \
 | `Kiper/Features` | Экраны: Главная, Подписки, Аналитика, Настройки |
 | `Kiper/Shared` | Фон и палитры, анимации, компоненты, форматирование, навигация |
 | `KiperTests` | Unit-тесты (Swift Testing) |
+| `KiperUITests` | Сквозной тест: настоящее напоминание → нажатие на баннер → открывается подписка |
 
 ### Данные
 - Всё хранится в одном JSON-файле `Application Support/kiper.json` в **формате бэкапа Android-версии** (`BackupData` v1). Запись атомарная, при каждом изменении.
