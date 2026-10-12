@@ -7,6 +7,10 @@ import 'package:timezone/timezone.dart' as tz;
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
 
+  /// False until [init] completes (e.g. in unit tests): all calls become no-ops
+  /// instead of touching the uninitialized plugin / timezone database.
+  static bool _initialized = false;
+
   /// Called when user taps a notification. Set this in app startup code.
   static void Function(String? payload)? onNotificationTap;
 
@@ -38,6 +42,7 @@ class NotificationService {
         onNotificationTap?.call(response.payload);
       },
     );
+    _initialized = true;
   }
 
   /// Request notification permission (Android 13+).
@@ -83,6 +88,7 @@ class NotificationService {
     required int minute,
     String? payload,
   }) async {
+    if (!_initialized) return;
     final scheduledTime = tz.TZDateTime(
       tz.local,
       scheduledDate.year,
@@ -133,6 +139,7 @@ class NotificationService {
 
   /// Cancel a specific notification by [id].
   static Future<void> cancel(int id) async {
+    if (!_initialized) return;
     try {
       await _plugin.cancel(id: id);
     } catch (e) {
@@ -142,6 +149,7 @@ class NotificationService {
 
   /// Cancel all scheduled and delivered notifications.
   static Future<void> cancelAll() async {
+    if (!_initialized) return;
     try {
       await _plugin.cancelAll();
     } catch (e) {

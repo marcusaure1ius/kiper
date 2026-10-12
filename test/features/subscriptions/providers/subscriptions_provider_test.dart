@@ -4,12 +4,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kiper/core/database/app_database.dart';
 import 'package:kiper/core/database/database_provider.dart';
 import 'package:kiper/features/subscriptions/providers/subscriptions_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  // Settings providers read SharedPreferences; reminders are no-ops until NotificationService.init.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late AppDatabase db;
   late ProviderContainer container;
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     db = AppDatabase(NativeDatabase.memory());
     container = ProviderContainer(overrides: [
       databaseProvider.overrideWithValue(db),
