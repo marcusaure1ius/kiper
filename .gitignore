@@ -52,3 +52,7 @@ android/app/*.jks
 # Claude Code
 .superpowers/
 docs/superpowers/
+
+# iOS native prototype
+ios-native/build/
+ios-native/**/xcuserdata/
