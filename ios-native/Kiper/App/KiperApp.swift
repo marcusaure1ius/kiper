@@ -48,6 +48,11 @@ struct KiperApp: App {
                 .task {
                     // Ask once on first launch (reminders default to on, like Android).
                     if store.remindersEnabled { await store.enableReminders() }
+                    #if DEBUG
+                    if ProcessInfo.processInfo.arguments.contains("-KiperTestReminder"), let sub = store.active.first {
+                        await Reminders.scheduleTest(for: sub)
+                    }
+                    #endif
                 }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active { Task { await store.refreshOnForeground() } }

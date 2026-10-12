@@ -61,6 +61,20 @@ enum Reminders {
 
     // MARK: - System
 
+    #if DEBUG
+    /// `-KiperTestReminder`: a real reminder for `sub` in a few seconds, to check
+    /// delivery and tap-to-open without waiting for the scheduled time.
+    static func scheduleTest(for sub: Subscription, after seconds: TimeInterval = 8) async {
+        let content = UNMutableNotificationContent()
+        content.title = "Напоминание о подписке"
+        content.body = body(for: sub, daysBefore: sub.reminderDaysBefore)
+        content.sound = .default
+        content.userInfo = [subscriptionIdKey: sub.id]
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: seconds, repeats: false)
+        try? await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "debug-test", content: content, trigger: trigger))
+    }
+    #endif
+
     static func requestAuthorization() async -> Bool {
         (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
     }
