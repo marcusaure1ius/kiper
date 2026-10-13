@@ -50,3 +50,15 @@ xcodebuild -project Kiper.xcodeproj -scheme Kiper \
 - **JSON:** подписки и категории. Иконки Material и SF Symbols переводятся друг в друга, цвет хранится как ARGB-число, даты — в формате `DateTime.parse` из Dart.
 - **CSV:** только подписки, те же колонки, что в Android.
 - **Импорт** через «Файлы»: можно заменить все данные или объединить их с текущими (upsert по `id`).
+
+## Установка на свой iPhone без платного аккаунта
+
+Бесплатная подпись живёт 7 дней. Скрипт переустанавливает приложение (данные сохраняются), когда телефон доступен по кабелю или в той же Wi‑Fi и разблокирован:
+
+```bash
+./scripts/install-schedule.sh              # launchd: 10:00, 15:00, 21:00 и при входе; реальная переустановка — раз в 3+ дня
+./scripts/refresh-device.sh --force        # переустановить прямо сейчас
+./scripts/install-schedule.sh --uninstall  # убрать расписание
+```
+
+Лог: `~/Library/Logs/kiper-refresh.log`. UDID телефона задаётся `KIPER_DEVICE_ID`.

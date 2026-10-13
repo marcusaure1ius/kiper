@@ -11,6 +11,7 @@ struct SettingsScreen: View {
     @State private var editingCategory: Category?
     @State private var addingCategory = false
     @State private var deletingCategory: Category?
+    @State private var confirmReset = false
 
     var body: some View {
         @Bindable var store = store
@@ -113,6 +114,8 @@ struct SettingsScreen: View {
                         Label("Экспорт в CSV", systemImage: "tablecells")
                     }
                     Button("Импорт из файла", systemImage: "square.and.arrow.down") { importing = true }
+                    Button("Удалить все данные", systemImage: "trash", role: .destructive) { confirmReset = true }
+                        .tint(.red)
                 } header: {
                     Text("Данные")
                 } footer: {
@@ -138,6 +141,15 @@ struct SettingsScreen: View {
                 }
             } message: {
                 Text("Подписки этой категории останутся без категории.")
+            }
+            .alert("Удалить все данные?", isPresented: $confirmReset) {
+                Button("Отмена", role: .cancel) {}
+                Button("Удалить", role: .destructive) {
+                    withAnimation { store.resetAll() }
+                    store.show("Данные удалены", symbol: "trash.circle.fill", tint: .red)
+                }
+            } message: {
+                Text("Все подписки будут удалены, категории вернутся к стандартным. Сначала можно сделать «Экспорт в JSON».")
             }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.json, .commaSeparatedText, .plainText]) { result in
                 handleImport(result)

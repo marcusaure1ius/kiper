@@ -295,6 +295,15 @@ final class AppStore {
         return ImportResult(subscriptions: subs.count, categories: cats.count, skipped: file.subscriptions.count - subs.count)
     }
 
+    /// Wipes subscriptions and restores the default categories (Settings → «Удалить все данные»).
+    func resetAll() {
+        subscriptions = []
+        categories = SeedData.categories
+        unparsed = []
+        loadError = nil
+        didChange()
+    }
+
     /// CSV carries subscriptions only; rows are upserted by id (Android behaviour).
     @discardableResult
     func importCSV(_ text: String) -> ImportResult {

@@ -80,3 +80,16 @@ struct StoreTests {
         #expect(abs(store.monthlyTotalRub - 1000) < 0.001)
     }
 }
+
+@MainActor
+struct ResetTests {
+    @Test func resetWipesSubscriptionsAndRestoresCategories() {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("kiper-\(UUID().uuidString).json")
+        let store = makeStore(seed: true, file: url)
+        store.deleteCategory("cat-ai")
+        store.resetAll()
+        #expect(store.subscriptions.isEmpty)
+        #expect(store.categories.map(\.id) == SeedData.categories.map(\.id))
+        #expect(makeStore(file: url).subscriptions.isEmpty, "reset is persisted")
+    }
+}
