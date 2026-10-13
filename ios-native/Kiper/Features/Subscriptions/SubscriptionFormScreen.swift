@@ -31,7 +31,7 @@ struct SubscriptionForm: View {
     @State private var openDate: DateField?
 
     private enum Field { case name, amount }
-    private enum DateField { case start, next }
+    private enum DateField { case next }
 
     init(editing: Subscription? = nil, preset: FormPreset? = nil, showsCancel: Bool = false, onDone: @escaping () -> Void) {
         existing = editing
@@ -102,8 +102,7 @@ struct SubscriptionForm: View {
             }
 
             Section {
-                DateRow(title: "Дата начала", date: $draft.startDate, isOpen: openBinding(.start))
-                DateRow(title: "Следующее списание", date: $draft.nextBillingDate, isOpen: openBinding(.next))
+                DateRow(title: "Дата списания", date: $draft.nextBillingDate, isOpen: openBinding(.next))
                 Picker("Напоминание", selection: $draft.reminderDaysBefore) {
                     Text("Выключено").tag(0)
                     Text("За 1 день").tag(1)
@@ -117,6 +116,7 @@ struct SubscriptionForm: View {
                     .lineLimit(2...5)
             }
         }
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle(existing == nil ? "Новая подписка" : "Редактирование")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -128,6 +128,11 @@ struct SubscriptionForm: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button(role: .confirm) {
                     draft.amount = amount ?? 0
+                    // No separate start date in the form: a new subscription starts with
+                    // its first charge; an edited one never starts after its next charge.
+                    if existing == nil || draft.nextBillingDate < draft.startDate {
+                        draft.startDate = draft.nextBillingDate
+                    }
                     withAnimation { store.upsert(draft) }
                     store.show(existing == nil ? "Подписка добавлена" : "Изменения сохранены")
                     onDone()
@@ -149,7 +154,11 @@ struct SubscriptionForm: View {
     private func openBinding(_ field: DateField) -> Binding<Bool> {
         Binding(
             get: { openDate == field },
-            set: { isOpen in withAnimation(.snappy) { openDate = isOpen ? field : nil } }
+            set: { isOpen in
+                // Hide the keyboard so it doesn't cover the calendar.
+                if isOpen { focus = nil }
+                withAnimation(.snappy) { openDate = isOpen ? field : nil }
+            }
         )
     }
 }
