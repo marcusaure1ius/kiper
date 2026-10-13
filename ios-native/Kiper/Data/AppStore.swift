@@ -33,6 +33,9 @@ final class AppStore {
     /// Notifications denied in system Settings while reminders are on.
     private(set) var remindersBlocked = false
 
+    /// Copies of the data into a user-picked Files folder (e.g. iCloud Drive).
+    let autoBackup: AutoBackup
+
     /// Transient confirmation shown at the top of the app.
     var toast: Toast?
 
@@ -53,6 +56,7 @@ final class AppStore {
         self.persistence = persistence
         self.defaults = defaults
         self.remindersEnabledInSystem = systemReminders
+        self.autoBackup = AutoBackup(defaults: defaults)
         rateSnapshot = persistence == nil ? .fallback : ExchangeRates.cached(defaults: defaults)
         remindersEnabled = defaults.object(forKey: Keys.remindersEnabled) as? Bool ?? true
         reminderTime = Calendar.current.date(from: DateComponents(
@@ -181,6 +185,10 @@ final class AppStore {
     /// Called when the app becomes active: roll dates, refresh stale rates, resync reminders.
     func refreshOnForeground() async {
         if advanceBillingDates() { scheduleReminders() }
+        // At least one copy a day even without edits (keeps the dated history going).
+        if autoBackup.isEnabled, !(autoBackup.lastBackup.map { Calendar.current.isDateInToday($0) } ?? false) {
+            autoBackup.run(backup())
+        }
         if Date.now.timeIntervalSince(rateSnapshot.fetchedAt) > ExchangeRates.maxAge {
             await refreshRates(silent: true)
         }
@@ -189,6 +197,7 @@ final class AppStore {
     private func didChange() {
         save()
         scheduleReminders()
+        autoBackup.schedule { [unowned self] in self.backup() }
     }
 
     private func save() {

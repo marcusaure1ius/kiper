@@ -5,7 +5,12 @@ struct SettingsScreen: View {
     @Environment(AppStore.self) private var store
     @AppStorage("themeMode") private var themeMode: ThemeMode = .system
     @AppStorage("backgroundStyle") private var backgroundStyle: BackgroundStyle = .lavender
-    @State private var importing = false
+    /// One file picker for both uses — SwiftUI ignores a second `.fileImporter` in the same view.
+    /// The mode outlives the presentation flag: SwiftUI clears `isPresented`
+    /// before calling the completion, so it can't be derived from it.
+    @State private var showPicker = false
+    @State private var pickerMode: PickerMode = .importFile
+    private enum PickerMode { case importFile, backupFolder }
     @State private var pendingBackup: BackupFile?
     @State private var importError: String?
     @State private var editingCategory: Category?
@@ -101,6 +106,35 @@ struct SettingsScreen: View {
                 }
 
                 Section {
+                    if store.autoBackup.isEnabled {
+                        LabeledContent {
+                            Text(store.autoBackup.folderName ?? "")
+                        } label: {
+                            Label("Автокопия", systemImage: "icloud.and.arrow.up")
+                        }
+                        if let error = store.autoBackup.lastError {
+                            Label(error, systemImage: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                                .font(.subheadline)
+                        }
+                        Button("Сохранить копию сейчас", systemImage: "arrow.clockwise.icloud") {
+                            if store.autoBackup.run(store.backup()) { store.show("Копия сохранена") }
+                        }
+                        Button("Сменить папку", systemImage: "folder") { pickerMode = .backupFolder; showPicker = true }
+                        Button("Отключить автокопию", systemImage: "icloud.slash", role: .destructive) {
+                            withAnimation { store.autoBackup.disable() }
+                        }
+                        .tint(.red)
+                    } else {
+                        Button("Включить автокопию в Файлы", systemImage: "icloud.and.arrow.up") { pickerMode = .backupFolder; showPicker = true }
+                    }
+                } header: {
+                    Text("Резервная копия")
+                } footer: {
+                    Text(backupFooter)
+                }
+
+                Section {
                     ShareLink(
                         item: JSONExport(data: (try? BackupMapper.encode(store.backup())) ?? Data()),
                         preview: SharePreview("Резервная копия Кипера", image: Image(systemName: "doc.text"))
@@ -113,7 +147,7 @@ struct SettingsScreen: View {
                     ) {
                         Label("Экспорт в CSV", systemImage: "tablecells")
                     }
-                    Button("Импорт из файла", systemImage: "square.and.arrow.down") { importing = true }
+                    Button("Импорт из файла", systemImage: "square.and.arrow.down") { pickerMode = .importFile; showPicker = true }
                     Button("Удалить все данные", systemImage: "trash", role: .destructive) { confirmReset = true }
                         .tint(.red)
                 } header: {
@@ -151,8 +185,11 @@ struct SettingsScreen: View {
             } message: {
                 Text("Все подписки будут удалены, категории вернутся к стандартным. Сначала можно сделать «Экспорт в JSON».")
             }
-            .fileImporter(isPresented: $importing, allowedContentTypes: [.json, .commaSeparatedText, .plainText]) { result in
-                handleImport(result)
+            .fileImporter(
+                isPresented: $showPicker,
+                allowedContentTypes: pickerMode == .backupFolder ? [.folder] : [.json, .commaSeparatedText, .plainText]
+            ) { result in
+                if pickerMode == .backupFolder { chooseBackupFolder(result) } else { handleImport(result) }
             }
             .confirmationDialog(
                 "Импорт резервной копии",
@@ -176,11 +213,29 @@ struct SettingsScreen: View {
         }
     }
 
+    private var backupFooter: String {
+        guard store.autoBackup.isEnabled else {
+            return "Выберите папку в «Файлах», например iCloud Drive → Кипер. После каждого изменения туда сохранится «\(AutoBackup.latestName)» и копии за последние \(AutoBackup.keepDays) дней — их можно вернуть через «Импорт из файла»."
+        }
+        guard let last = store.autoBackup.lastBackup else { return "Копия ещё не сохранялась." }
+        let when = Calendar.current.isDateInToday(last) ? "сегодня в \(last.formatted(date: .omitted, time: .shortened))" : Fmt.smartDate(last)
+        return "Последняя копия: \(when). Сохраняется после каждого изменения."
+    }
+
     private var ratesFooter: String {
         let s = store.rateSnapshot
         if s.isFallback { return "Резервные курсы: пока нет данных от ЦБ РФ." }
         let date = Fmt.smartDate(s.quoteDate ?? s.fetchedAt)
         return "Курс ЦБ РФ на \(date)" + (date.hasSuffix(".") ? "" : ".")
+    }
+
+    private func chooseBackupFolder(_ result: Result<URL, Error>) {
+        do {
+            try store.autoBackup.setFolder(result.get())
+            if store.autoBackup.run(store.backup()) { store.show("Автокопия включена") }
+        } catch {
+            importError = error.localizedDescription
+        }
     }
 
     private func handleImport(_ result: Result<URL, Error>) {
