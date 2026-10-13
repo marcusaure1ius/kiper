@@ -116,7 +116,7 @@ private struct MonthSummaryCard: View {
         let fraction = total > 0 ? progress.paid / total : 0
 
         VStack(alignment: .leading, spacing: 14) {
-            Text("\(Fmt.monthName(.now)) · в месяц")
+            Text(Fmt.monthName(.now))
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
 
