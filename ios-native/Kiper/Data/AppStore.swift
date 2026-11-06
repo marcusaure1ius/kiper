@@ -301,12 +301,39 @@ final class AppStore {
     }
 
     private func save() {
+        WidgetSnapshot.store(widgetSnapshot())
         guard let persistence else { return }
         do {
             try persistence.save(backup())
         } catch {
             show("Не удалось сохранить данные", symbol: "exclamationmark.triangle.fill", tint: .orange)
         }
+    }
+
+    /// What the home-screen widgets show. Written into the App Group container
+    /// on every save; safe no-op when the container is unavailable (tests).
+    func widgetSnapshot(now: Date = .now) -> WidgetSnapshot {
+        let style = defaults.string(forKey: "backgroundStyle").flatMap(BackgroundStyle.init) ?? .lavender
+        let upcoming = futurePayments(days: 45, now: now).prefix(3).map { event in
+            WidgetSnapshot.Charge(
+                name: event.subscription.name,
+                domain: event.subscription.domain,
+                date: event.date,
+                amount: event.subscription.amount,
+                currency: event.subscription.currency.rawValue
+            )
+        }
+        let progress = monthProgress(now: now)
+        return WidgetSnapshot(
+            upcoming: Array(upcoming),
+            monthlyTotalRub: monthlyTotalRub,
+            paidRub: progress.paid,
+            remainingRub: progress.remaining,
+            budgetRub: monthlyBudgetRub,
+            accentHexLight: style.accentHex(dark: false),
+            accentHexDark: style.accentHex(dark: true),
+            generatedAt: now
+        )
     }
 
     // MARK: - Rates

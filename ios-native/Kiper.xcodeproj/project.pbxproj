@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		D10000000000000000000015 /* KiperWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D10000000000000000000001 /* KiperWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		B10000000000000000000011 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,12 +25,34 @@
 			remoteGlobalIDString = A10000000000000000000006;
 			remoteInfo = Kiper;
 		};
+		D10000000000000000000011 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000009 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D10000000000000000000006;
+			remoteInfo = KiperWidgets;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D10000000000000000000014 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/PlugIns";
+			dstSubfolderSpec = 13;
+			files = (
+				D10000000000000000000015 /* KiperWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A10000000000000000000001 /* Kiper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kiper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000000000000000000001 /* KiperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KiperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C10000000000000000000001 /* KiperUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KiperUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D10000000000000000000001 /* KiperWidgets.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = KiperWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -43,6 +69,16 @@
 		C10000000000000000000002 /* KiperUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = KiperUITests;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000002 /* KiperWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = KiperWidgets;
+			sourceTree = "<group>";
+		};
+		E10000000000000000000002 /* KiperShared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = KiperShared;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -69,6 +105,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D10000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -78,6 +121,8 @@
 				A10000000000000000000002 /* Kiper */,
 				B10000000000000000000002 /* KiperTests */,
 				C10000000000000000000002 /* KiperUITests */,
+				D10000000000000000000002 /* KiperWidgets */,
+				E10000000000000000000002 /* KiperShared */,
 				A10000000000000000000005 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,6 +133,7 @@
 				A10000000000000000000001 /* Kiper.app */,
 				B10000000000000000000001 /* KiperTests.xctest */,
 				C10000000000000000000001 /* KiperUITests.xctest */,
+				D10000000000000000000001 /* KiperWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -102,6 +148,7 @@
 				A10000000000000000000007 /* Sources */,
 				A10000000000000000000003 /* Frameworks */,
 				A10000000000000000000008 /* Resources */,
+				D10000000000000000000014 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -109,6 +156,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				A10000000000000000000002 /* Kiper */,
+				E10000000000000000000002 /* KiperShared */,
 			);
 			name = Kiper;
 			productName = Kiper;
@@ -157,6 +205,27 @@
 			productReference = C10000000000000000000001 /* KiperUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		D10000000000000000000006 /* KiperWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D10000000000000000000010 /* Build configuration list for PBXNativeTarget "KiperWidgets" */;
+			buildPhases = (
+				D10000000000000000000007 /* Sources */,
+				D10000000000000000000003 /* Frameworks */,
+				D10000000000000000000008 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D10000000000000000000002 /* KiperWidgets */,
+				E10000000000000000000002 /* KiperShared */,
+			);
+			name = KiperWidgets;
+			productName = KiperWidgets;
+			productReference = D10000000000000000000001 /* KiperWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -178,6 +247,9 @@
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = A10000000000000000000006;
 					};
+					D10000000000000000000006 = {
+						CreatedOnToolsVersion = 26.3;
+					};
 				};
 			};
 			buildConfigurationList = A10000000000000000000013 /* Build configuration list for PBXProject "Kiper" */;
@@ -197,6 +269,7 @@
 				A10000000000000000000006 /* Kiper */,
 				B10000000000000000000006 /* KiperTests */,
 				C10000000000000000000006 /* KiperUITests */,
+				D10000000000000000000006 /* KiperWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -217,6 +290,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C10000000000000000000008 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D10000000000000000000008 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -247,6 +327,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D10000000000000000000007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -268,6 +355,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Kiper/Kiper.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 729P86DA2P;
@@ -297,6 +385,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Kiper/Kiper.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 729P86DA2P;
@@ -434,6 +523,44 @@
 			};
 			name = Release;
 		};
+		D10000000000000000000012 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = KiperWidgets/KiperWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 729P86DA2P;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Кипер Виджеты";
+				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = com.apple.widgetkit-extension;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.kiper.ios.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		D10000000000000000000013 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = KiperWidgets/KiperWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 729P86DA2P;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Кипер Виджеты";
+				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = com.apple.widgetkit-extension;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.kiper.ios.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -469,6 +596,15 @@
 			buildConfigurations = (
 				C10000000000000000000012 /* Debug */,
 				C10000000000000000000013 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D10000000000000000000010 /* Build configuration list for PBXNativeTarget "KiperWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D10000000000000000000012 /* Debug */,
+				D10000000000000000000013 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

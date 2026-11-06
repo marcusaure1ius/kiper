@@ -71,7 +71,12 @@ enum BackgroundStyle: String, CaseIterable, Identifiable {
 
     /// Accent for controls, selections and charts — tuned per palette and theme.
     func accent(dark: Bool) -> Color {
-        let hex: UInt32 = switch (self, dark) {
+        Color(hex: accentHex(dark: dark))
+    }
+
+    /// Raw accent as 0xRRGGBB (shared with widgets, which have no SwiftUI palette).
+    func accentHex(dark: Bool) -> UInt32 {
+        switch (self, dark) {
         case (.lavender, false): 0x6A5CF1
         case (.lavender, true):  0x8F84FF
         case (.aurora, false):   0x0E9F7E
@@ -85,7 +90,6 @@ enum BackgroundStyle: String, CaseIterable, Identifiable {
         case (.iris, false):     0xD13F8A
         case (.iris, true):      0xFF6FB5
         }
-        return Color(hex: hex)
     }
 
     /// 3×3 mesh colours, row by row.
