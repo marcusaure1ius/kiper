@@ -13,13 +13,16 @@ struct BackupFile: Codable, Equatable {
     var subscriptions: [SubscriptionDTO]
     var categories: [CategoryDTO]
     var settings: [String: String]
+    /// iOS-only payment history (Android ignores the key).
+    var payments: [PaymentRecordDTO]?
 
-    init(version: Int = BackupFile.currentVersion, exportedAt: String, subscriptions: [SubscriptionDTO], categories: [CategoryDTO], settings: [String: String] = [:]) {
+    init(version: Int = BackupFile.currentVersion, exportedAt: String, subscriptions: [SubscriptionDTO], categories: [CategoryDTO], settings: [String: String] = [:], payments: [PaymentRecordDTO]? = nil) {
         self.version = version
         self.exportedAt = exportedAt
         self.subscriptions = subscriptions
         self.categories = categories
         self.settings = settings
+        self.payments = payments
     }
 
     init(from decoder: Decoder) throws {
@@ -31,6 +34,8 @@ struct BackupFile: Codable, Equatable {
         categories = try c.decodeIfPresent([CategoryDTO].self, forKey: .categories) ?? []
         // Android writes `{}` today; tolerate any non-string values.
         settings = (try? c.decodeIfPresent([String: String].self, forKey: .settings)) ?? [:]
+        // A single unreadable payment row must not break the whole file.
+        payments = (try? c.decodeIfPresent([PaymentRecordDTO].self, forKey: .payments))
     }
 }
 
@@ -61,6 +66,17 @@ struct CategoryDTO: Codable, Equatable {
     var color: Int
     /// Material icon name (Android) or SF Symbol name (iOS).
     var icon: String
+}
+
+/// `id` is derived from `subscriptionId` + `date`, so it isn't stored.
+struct PaymentRecordDTO: Codable, Equatable {
+    var subscriptionId: String
+    var date: String
+    var amount: Double
+    var currency: String
+    var amountRub: Double
+    var kind: String
+    var source: String
 }
 
 enum BackupError: LocalizedError, Equatable {
@@ -151,12 +167,31 @@ enum BackupMapper {
         Category(id: d.id, name: d.name, colorHex: UInt32(truncatingIfNeeded: d.color) & 0xFF_FFFF, symbol: IconMap.symbol(for: d.icon))
     }
 
-    static func file(subscriptions: [Subscription], categories: [Category], settings: [String: String] = [:], now: Date = .now) -> BackupFile {
+    static func dto(_ p: PaymentRecord) -> PaymentRecordDTO {
+        PaymentRecordDTO(
+            subscriptionId: p.subscriptionId, date: string(from: p.date),
+            amount: p.amount, currency: p.currency.rawValue, amountRub: p.amountRub,
+            kind: p.kind.rawValue, source: p.source.rawValue
+        )
+    }
+
+    static func payment(_ d: PaymentRecordDTO) -> PaymentRecord? {
+        guard let date = date(from: d.date) else { return nil }
+        return PaymentRecord(
+            subscriptionId: d.subscriptionId, date: date, amount: d.amount,
+            currency: Currency(rawValue: d.currency.uppercased()) ?? .rub, amountRub: d.amountRub,
+            kind: PaymentRecord.Kind(rawValue: d.kind) ?? .charge,
+            source: PaymentRecord.Source(rawValue: d.source) ?? .auto
+        )
+    }
+
+    static func file(subscriptions: [Subscription], categories: [Category], settings: [String: String] = [:], payments: [PaymentRecord] = [], now: Date = .now) -> BackupFile {
         BackupFile(
             exportedAt: string(from: now),
             subscriptions: subscriptions.map(dto),
             categories: categories.map(dto),
-            settings: settings
+            settings: settings,
+            payments: payments.map(dto)
         )
     }
 

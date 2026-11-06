@@ -48,6 +48,10 @@ struct SubscriptionDetailScreen: View {
                 }
             }
 
+            if sub.status != .trial {
+                paymentsSection(sub)
+            }
+
             if let note = sub.note, !note.isEmpty {
                 Section("Заметка") { Text(note) }
             }
@@ -96,6 +100,33 @@ struct SubscriptionDetailScreen: View {
 
     private func row(_ title: String, _ value: String) -> some View {
         LabeledContent(title, value: value)
+    }
+
+    /// Recorded charges, newest first, with real amounts — a price change shows
+    /// as "было → стало" next to the current price.
+    private func paymentsSection(_ sub: Subscription) -> some View {
+        let history = store.payments
+            .filter { $0.subscriptionId == sub.id && $0.kind == .charge }
+            .sorted { $0.date > $1.date }
+        return Group {
+            if !history.isEmpty {
+                Section("История платежей") {
+                    if let last = history.first, last.amount != sub.amount || last.currency != sub.currency {
+                        LabeledContent("Цена изменилась") {
+                            Text("\(Fmt.money(last.amount, last.currency)) → \(Fmt.money(sub.amount, sub.currency))")
+                                .foregroundStyle(.orange)
+                                .monospacedDigit()
+                        }
+                    }
+                    ForEach(Array(history.prefix(5))) { record in
+                        LabeledContent(Fmt.smartDate(record.date)) {
+                            Text(Fmt.money(record.amount, record.currency))
+                                .monospacedDigit()
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

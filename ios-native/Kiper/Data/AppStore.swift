@@ -8,6 +8,7 @@ import SwiftUI
 final class AppStore {
     private(set) var subscriptions: [Subscription] = []
     private(set) var categories: [Category] = []
+    private(set) var payments: [PaymentRecord] = []
     private(set) var rateSnapshot: RateSnapshot
     private(set) var isRefreshingRates = false
     /// Set when the stored file could not be read; shown once in Settings.
@@ -70,6 +71,7 @@ final class AppStore {
                 for dto in file.subscriptions {
                     if let sub = BackupMapper.subscription(dto) { subscriptions.append(sub) } else { unparsed.append(dto) }
                 }
+                payments = (file.payments ?? []).compactMap(BackupMapper.payment)
             } else {
                 // First launch: seed categories (always) and demo subscriptions (debug only).
                 categories = SeedData.categories
@@ -84,7 +86,22 @@ final class AppStore {
             loadError = copy.map { "\(reason) Исходный файл сохранён как «\($0.lastPathComponent)»." } ?? reason
             categories = SeedData.categories
         }
+        backfillPaymentsIfNeeded()
         advanceBillingDates()
+    }
+
+    /// One-time migration when payment history arrives with an existing data set:
+    /// infer records for every past charge so analytics are complete from day one.
+    private func backfillPaymentsIfNeeded(now: Date = .now) {
+        guard payments.isEmpty else { return }
+        let today = Calendar.current.startOfDay(for: now)
+        for sub in chargeable {
+            for date in billingDates(of: sub, from: sub.startDate, to: today, now: now) {
+                payments.append(PaymentRecord(subscriptionId: sub.id, date: date, amount: sub.amount,
+                                              currency: sub.currency, amountRub: toRub(sub.amount, sub.currency)))
+            }
+        }
+        if !payments.isEmpty { save() }
     }
 
     static var isDebug: Bool {
@@ -179,6 +196,51 @@ final class AppStore {
         didChange()
     }
 
+    // MARK: - Payments
+
+    /// Marks a charge as paid (or corrects an existing record) with today's price.
+    func markPaid(_ sub: Subscription, on date: Date) {
+        recordPayment(for: sub, on: date, kind: .charge, source: .manual)
+        didChange()
+    }
+
+    /// Marks a charge as skipped — it stays in history but stops counting anywhere.
+    func skip(_ sub: Subscription, on date: Date) {
+        recordPayment(for: sub, on: date, kind: .skip, source: .manual)
+        didChange()
+    }
+
+    func deletePayment(_ id: String) {
+        payments.removeAll { $0.id == id }
+        didChange()
+    }
+
+    private func recordPayment(for sub: Subscription, on date: Date, kind: PaymentRecord.Kind, source: PaymentRecord.Source) {
+        // A manual edit wins over anything; an auto record never overwrites one.
+        let record = PaymentRecord(subscriptionId: sub.id, date: date, amount: sub.amount,
+                                   currency: sub.currency, amountRub: toRub(sub.amount, sub.currency),
+                                   kind: kind, source: source)
+        if let i = payments.firstIndex(where: { $0.id == record.id }) {
+            if source == .manual || payments[i].source == .auto { payments[i] = record }
+        } else {
+            payments.append(record)
+        }
+    }
+
+    /// RUB a charge actually cost, from the record; nil when it wasn't recorded yet.
+    private func recordedRub(for sub: Subscription, on date: Date) -> Double? {
+        let id = PaymentRecord.makeId(subscriptionId: sub.id, date: date)
+        guard let r = payments.first(where: { $0.id == id }) else { return nil }
+        return r.kind == .skip ? 0 : r.amountRub
+    }
+
+    /// The last charge that actually happened, if any (recorded amounts only).
+    func lastCharge(for sub: Subscription) -> PaymentRecord? {
+        payments
+            .filter { $0.subscriptionId == sub.id && $0.kind == .charge }
+            .max { $0.date < $1.date }
+    }
+
     /// Moves past `nextBillingDate`s of active subscriptions forward (Android: `advanceBillingDates`).
     /// Trials whose end has passed become active here. Returns true if anything changed.
     @discardableResult
@@ -197,6 +259,11 @@ final class AppStore {
         }
         for i in subscriptions.indices where subscriptions[i].status == .active {
             guard Calendar.current.startOfDay(for: subscriptions[i].nextBillingDate) < today else { continue }
+            // Charges that slipped by while the app wasn't looking are recorded now,
+            // with the amounts as they were on the grid (not today's edited price).
+            for date in billingDates(of: subscriptions[i], from: subscriptions[i].nextBillingDate, to: today, now: now) {
+                recordPayment(for: subscriptions[i], on: date, kind: .charge, source: .auto)
+            }
             let next = Schedule.firstCharge(of: subscriptions[i], onOrAfter: today)
             if next != subscriptions[i].nextBillingDate {
                 subscriptions[i].nextBillingDate = next
@@ -285,7 +352,7 @@ final class AppStore {
     // MARK: - Backup
 
     func backup(now: Date = .now) -> BackupFile {
-        var file = BackupMapper.file(subscriptions: subscriptions, categories: categories, now: now)
+        var file = BackupMapper.file(subscriptions: subscriptions, categories: categories, payments: payments, now: now)
         file.subscriptions += unparsed
         return file
     }
@@ -305,10 +372,12 @@ final class AppStore {
     func importBackup(_ file: BackupFile, mode: ImportMode) -> ImportResult {
         let cats = file.categories.map(BackupMapper.category)
         let subs = file.subscriptions.compactMap(BackupMapper.subscription)
+        let pays = (file.payments ?? []).compactMap(BackupMapper.payment)
         switch mode {
         case .replace:
             categories = cats
             subscriptions = subs
+            payments = pays
             unparsed = []
         case .merge:
             for c in cats {
@@ -316,6 +385,9 @@ final class AppStore {
             }
             for s in subs {
                 if let i = subscriptions.firstIndex(where: { $0.id == s.id }) { subscriptions[i] = s } else { subscriptions.append(s) }
+            }
+            for p in pays {
+                if let i = payments.firstIndex(where: { $0.id == p.id }) { payments[i] = p } else { payments.append(p) }
             }
         }
         // Drop dangling category links (a category may be missing from the file).
@@ -333,6 +405,7 @@ final class AppStore {
     func resetAll() {
         subscriptions = []
         categories = SeedData.categories
+        payments = []
         unparsed = []
         loadError = nil
         didChange()
@@ -366,34 +439,46 @@ final class AppStore {
         let month = cal.dateInterval(of: .month, for: now)!
         var paid = 0.0, remaining = 0.0
         for sub in active {
-            for date in billingDates(of: sub, from: month.start, to: month.end) {
-                let rub = toRub(sub.amount, sub.currency)
+            for date in billingDates(of: sub, from: month.start, to: month.end, now: now) {
+                let rub = recordedRub(for: sub, on: date) ?? toRub(sub.amount, sub.currency)
                 if date < today { paid += rub } else { remaining += rub }
             }
         }
         // A trial's first charge is already scheduled — count it as remaining
         // (from today, so trial days never leak in as paid history).
         for sub in subscriptions where sub.status == .trial {
-            for _ in billingDates(of: sub, from: today, to: month.end) {
+            for _ in billingDates(of: sub, from: today, to: month.end, now: now) {
                 remaining += toRub(sub.amount, sub.currency)
             }
         }
         return (paid, remaining)
     }
 
+    /// Past charges: recorded payments first (real amounts, survives cancellation),
+    /// then schedule inference for anything older than recording itself.
     func pastPayments(days: Int = 90, now: Date = .now) -> [PaymentEvent] {
         let today = Calendar.current.startOfDay(for: now)
         let start = Calendar.current.date(byAdding: .day, value: -days, to: today)!
-        return active
-            .flatMap { sub in billingDates(of: sub, from: start, to: today).map { PaymentEvent(subscription: sub, date: $0) } }
-            .sorted { $0.date > $1.date }
+        var events: [PaymentEvent] = []
+        var covered = Set<String>()
+        for r in payments where r.kind == .charge && r.date >= start && r.date < today {
+            guard let sub = subscription(id: r.subscriptionId) else { continue }
+            events.append(PaymentEvent(subscription: sub, date: r.date, record: r))
+            covered.insert(r.id)
+        }
+        events += active.flatMap { sub in
+            billingDates(of: sub, from: start, to: today, now: now)
+                .filter { !covered.contains(PaymentRecord.makeId(subscriptionId: sub.id, date: $0)) }
+                .map { PaymentEvent(subscription: sub, date: $0) }
+        }
+        return events.sorted { $0.date > $1.date }
     }
 
     func futurePayments(days: Int = 90, now: Date = .now) -> [PaymentEvent] {
         let today = Calendar.current.startOfDay(for: now)
         let end = Calendar.current.date(byAdding: .day, value: days, to: today)!
         return (active + subscriptions.filter { $0.status == .trial })
-            .flatMap { sub in billingDates(of: sub, from: today, to: end).map { PaymentEvent(subscription: sub, date: $0) } }
+            .flatMap { sub in billingDates(of: sub, from: today, to: end, now: now).map { PaymentEvent(subscription: sub, date: $0) } }
             .sorted { $0.date < $1.date }
     }
 
@@ -403,7 +488,7 @@ final class AppStore {
         let cal = Calendar.current
         let current = cal.dateInterval(of: .month, for: now)!.start
         let starts = (-past...future).map { cal.date(byAdding: .month, value: $0, to: current)! }
-        return totals(buckets: starts, end: cal.date(byAdding: .month, value: 1, to: starts.last!)!, current: current) {
+        return totals(buckets: starts, end: cal.date(byAdding: .month, value: 1, to: starts.last!)!, current: current, now: now) {
             cal.dateInterval(of: .month, for: $0)!.start
         }
     }
@@ -413,7 +498,7 @@ final class AppStore {
         cal.timeZone = .current
         let current = cal.dateInterval(of: .weekOfYear, for: now)!.start
         let starts = (-past...future).map { cal.date(byAdding: .weekOfYear, value: $0, to: current)! }
-        return totals(buckets: starts, end: cal.date(byAdding: .weekOfYear, value: 1, to: starts.last!)!, current: current) {
+        return totals(buckets: starts, end: cal.date(byAdding: .weekOfYear, value: 1, to: starts.last!)!, current: current, now: now) {
             cal.dateInterval(of: .weekOfYear, for: $0)!.start
         }
     }
@@ -424,8 +509,8 @@ final class AppStore {
         let today = Calendar.current.startOfDay(for: now)
         var paid: [String?: Double] = [:], total: [String?: Double] = [:]
         for sub in chargeable {
-            for date in billingDates(of: sub, from: interval.start, to: interval.end) {
-                let rub = toRub(sub.amount, sub.currency)
+            for date in billingDates(of: sub, from: interval.start, to: interval.end, now: now) {
+                let rub = recordedRub(for: sub, on: date) ?? toRub(sub.amount, sub.currency)
                 total[sub.categoryId, default: 0] += rub
                 if date < today { paid[sub.categoryId, default: 0] += rub }
             }
@@ -437,17 +522,17 @@ final class AppStore {
 
     // MARK: - Helpers
 
-    private func totals(buckets: [Date], end: Date, current: Date, bucketOf: (Date) -> Date) -> [PeriodTotal] {
+    private func totals(buckets: [Date], end: Date, current: Date, now: Date, bucketOf: (Date) -> Date) -> [PeriodTotal] {
         var sums = Dictionary(uniqueKeysWithValues: buckets.map { ($0, 0.0) })
         for sub in chargeable {
-            for date in billingDates(of: sub, from: buckets.first!, to: end) {
-                sums[bucketOf(date), default: 0] += toRub(sub.amount, sub.currency)
+            for date in billingDates(of: sub, from: buckets.first!, to: end, now: now) {
+                sums[bucketOf(date), default: 0] += recordedRub(for: sub, on: date) ?? toRub(sub.amount, sub.currency)
             }
         }
         return buckets.map { PeriodTotal(start: $0, amount: sums[$0] ?? 0, isForecast: $0 >= current) }
     }
 
-    func billingDates(of sub: Subscription, from: Date, to: Date) -> [Date] {
-        Schedule.dates(of: sub, from: from, to: to)
+    func billingDates(of sub: Subscription, from: Date, to: Date, now: Date = .now) -> [Date] {
+        Schedule.dates(of: sub, from: from, to: to, now: now)
     }
 }

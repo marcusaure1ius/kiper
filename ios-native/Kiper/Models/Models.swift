@@ -112,7 +112,52 @@ struct Subscription: Identifiable, Hashable {
 struct PaymentEvent: Identifiable, Hashable {
     let subscription: Subscription
     let date: Date
+    /// Set for past charges that were actually recorded (auto or manual).
+    var record: PaymentRecord?
     var id: String { "\(subscription.id)-\(date.timeIntervalSince1970)" }
+}
+
+/// A charge that actually happened — or was explicitly skipped. Auto records are
+/// written when a billing date rolls past while the app is installed; manual ones
+/// add or correct from the payments sheet. Records keep the real amount, so price
+/// changes survive in history.
+struct PaymentRecord: Identifiable, Hashable {
+    /// `subscriptionId` + the charge's day: stable across re-planning and devices.
+    let id: String
+    let subscriptionId: String
+    let date: Date
+    var amount: Double
+    var currency: Currency
+    /// RUB snapshot at recording time (the rate that was live when it happened).
+    var amountRub: Double
+    var kind: Kind
+    var source: Source
+
+    enum Kind: String, Hashable { case charge, skip }
+    enum Source: String, Hashable { case auto, manual, bank }
+
+    static func makeId(subscriptionId: String, date: Date) -> String {
+        "\(subscriptionId)-\(idDay.string(from: date))"
+    }
+
+    init(subscriptionId: String, date: Date, amount: Double, currency: Currency, amountRub: Double, kind: Kind = .charge, source: Source = .auto) {
+        self.id = Self.makeId(subscriptionId: subscriptionId, date: date)
+        self.subscriptionId = subscriptionId
+        self.date = date
+        self.amount = amount
+        self.currency = currency
+        self.amountRub = amountRub
+        self.kind = kind
+        self.source = source
+    }
+
+    private static let idDay: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = .current
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
 }
 
 struct PeriodTotal: Identifiable {

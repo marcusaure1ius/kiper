@@ -31,6 +31,7 @@ struct BackupTests {
     @Test func decodesAndroidBackup() throws {
         let file = try BackupMapper.decode(Data(Self.androidJSON.utf8))
         #expect(file.subscriptions.count == 2)
+        #expect(file.payments == nil, "Android files predate payment history")
         let netflix = try #require(BackupMapper.subscription(file.subscriptions[0]))
         #expect(netflix.currency == .usd)
         #expect(netflix.reminderDaysBefore == 3)
@@ -95,6 +96,20 @@ struct BackupTests {
         store.importBackup(file, mode: .replace)
         #expect(store.subscriptions.count == 2)
         #expect(store.categories.map(\.id) == ["cat-streaming", "cat-books"])
+    }
+
+    @Test func paymentsRoundTripThroughBackup() throws {
+        let record = PaymentRecord(subscriptionId: "p", date: day(2026, 11, 1), amount: 22.99,
+                                   currency: .usd, amountRub: 2069.1, kind: .charge, source: .manual)
+        let skipped = PaymentRecord(subscriptionId: "p", date: day(2026, 12, 1), amount: 22.99,
+                                    currency: .usd, amountRub: 2069.1, kind: .skip, source: .bank)
+        let sub = makeSub(id: "p", amount: 22.99, currency: .usd, next: day(2027, 1, 1), start: day(2026, 1, 1))
+        let data = try BackupMapper.encode(BackupMapper.file(subscriptions: [sub], categories: [], payments: [record, skipped]))
+
+        let file = try BackupMapper.decode(data)
+        #expect(file.payments?.count == 2)
+        #expect(BackupMapper.payment(file.payments![0]) == record)
+        #expect(BackupMapper.payment(file.payments![1]) == skipped)
     }
 
     @Test func trialRoundTripsThroughBackup() throws {
