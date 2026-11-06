@@ -26,6 +26,7 @@ enum ThemeMode: String, CaseIterable, Identifiable {
 struct KiperApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var store = KiperApp.makeStore()
+    @State private var appLock = AppLock()
     @AppStorage("themeMode") private var themeMode: ThemeMode = .system
     @Environment(\.scenePhase) private var scenePhase
 
@@ -43,8 +44,16 @@ struct KiperApp: App {
         WindowGroup {
             RootTabView()
                 .modifier(PaletteAccent())
+                .overlay {
+                    if appLock.isLocked {
+                        LockView()
+                            .zIndex(10)
+                    }
+                }
+                .animation(.smooth, value: appLock.isLocked)
                 .environment(store)
                 .environment(appDelegate.router)
+                .environment(appLock)
                 .task {
                     // Ask once on first launch (reminders default to on, like Android).
                     if store.remindersEnabled { await store.enableReminders() }
@@ -55,6 +64,7 @@ struct KiperApp: App {
                     #endif
                 }
                 .onChange(of: scenePhase) { _, phase in
+                    appLock.scenePhaseChanged(phase)
                     if phase == .active { Task { await store.refreshOnForeground() } }
                 }
                 .preferredColorScheme(themeMode.colorScheme)

@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct SettingsScreen: View {
     @Environment(AppStore.self) private var store
+    @Environment(AppLock.self) private var appLock
     @AppStorage("themeMode") private var themeMode: ThemeMode = .system
     @AppStorage("backgroundStyle") private var backgroundStyle: BackgroundStyle = .lavender
     /// One file picker for both uses — SwiftUI ignores a second `.fileImporter` in the same view.
@@ -79,6 +80,17 @@ struct SettingsScreen: View {
                     Text("Бюджет")
                 } footer: {
                     Text("Лимит на все подписки в месяц. Карточка на главной покажет прогресс и подсветит превышение.")
+                }
+
+                Section {
+                    Toggle("Защита Face ID", isOn: Binding(
+                        get: { appLock.isEnabled },
+                        set: { appLock.setEnabled($0) }
+                    ))
+                } header: {
+                    Text("Приватность")
+                } footer: {
+                    Text("Кипер будет просить Face ID или код-пароль при запуске и после сворачивания.")
                 }
 
                 Section("Категории") {
