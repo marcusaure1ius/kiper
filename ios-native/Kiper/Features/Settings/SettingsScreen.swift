@@ -163,6 +163,12 @@ struct SettingsScreen: View {
                     ) {
                         Label("Экспорт в CSV", systemImage: "tablecells")
                     }
+                    ShareLink(
+                        item: ICSExport(text: ICS.calendar(events: store.futurePayments(days: 365))),
+                        preview: SharePreview("Расписание списаний (Календарь)", image: Image(systemName: "calendar"))
+                    ) {
+                        Label("Экспорт в Календарь (.ics)", systemImage: "calendar")
+                    }
                     Button("Импорт из файла", systemImage: "square.and.arrow.down") { pickerMode = .importFile; showPicker = true }
                     Button("Удалить все данные", systemImage: "trash", role: .destructive) { confirmReset = true }
                         .tint(.red)
