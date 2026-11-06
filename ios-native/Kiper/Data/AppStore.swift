@@ -530,6 +530,73 @@ final class AppStore {
             .sorted { $0.total > $1.total }
     }
 
+    // MARK: - Insights
+
+    /// Same-span comparison: charges since this month's start vs the same span
+    /// of the previous month (fair while the month is still running).
+    func monthOverMonth(now: Date = .now) -> MonthDelta? {
+        let cal = Calendar.current
+        let month = cal.dateInterval(of: .month, for: now)!
+        let prevMonth = cal.dateInterval(of: .month, for: cal.date(byAdding: .day, value: -1, to: month.start)!)!
+        let today = cal.startOfDay(for: now)
+        let span = today.timeIntervalSince(month.start)
+        let current = chargesTotal(from: month.start, to: today, now: now)
+        let previous = chargesTotal(from: prevMonth.start, to: prevMonth.start.addingTimeInterval(span), now: now)
+        // Nothing charged in either span — nothing to compare yet.
+        guard current > 0 || previous > 0 else { return nil }
+        return MonthDelta(current: current, previous: previous)
+    }
+
+    private func chargesTotal(from: Date, to: Date, now: Date) -> Double {
+        chargeable.reduce(0) { sum, sub in
+            sum + billingDates(of: sub, from: from, to: to, now: now)
+                .reduce(0) { $0 + (recordedRub(for: sub, on: $1) ?? toRub(sub.amount, sub.currency)) }
+        }
+    }
+
+    /// Steady-state year cost: active spending projected over 12 months.
+    func annualForecast() -> (totalRub: Double, top: [AnnualCost]) {
+        let items = active
+            .map { AnnualCost(subscription: $0, perYearRub: toRub($0.amount, $0.currency) * $0.billingPeriod.monthlyEquivalent * 12) }
+            .sorted { $0.perYearRub > $1.perYearRub }
+        return (items.reduce(0) { $0 + $1.perYearRub }, Array(items.prefix(3)))
+    }
+
+    /// Likely duplicates: same service domain, or same category with one name
+    /// containing the other ("Netflix" vs "Netflix Premium"). A hint, not a verdict.
+    func duplicateGroups() -> [[Subscription]] {
+        let pool = notCancelled
+        var groups: [[Subscription]] = []
+        var byDomain: [String: [Subscription]] = [:]
+        for sub in pool {
+            if let domain = sub.domain?.lowercased(), !domain.isEmpty { byDomain[domain, default: []].append(sub) }
+        }
+        groups += byDomain.values.filter { $0.count > 1 }
+        var used = Set(groups.flatMap { $0.map(\.id) })
+
+        for peers in Dictionary(grouping: pool, by: \.categoryId).values {
+            for seed in peers {
+                guard !used.contains(seed.id) else { continue }
+                let matches = peers.filter { other in
+                    guard other.id != seed.id, !used.contains(other.id) else { return false }
+                    let a = Self.normalized(seed.name), b = Self.normalized(other.name)
+                    guard min(a.count, b.count) >= 3 else { return false }
+                    return a.contains(b) || b.contains(a)
+                }
+                guard !matches.isEmpty else { continue }
+                let group = [seed] + matches
+                groups.append(group)
+                used.formUnion(group.map(\.id))
+            }
+        }
+        return groups
+    }
+
+    private static func normalized(_ name: String) -> String {
+        name.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "ru_RU"))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     // MARK: - Helpers
 
     private func totals(buckets: [Date], end: Date, current: Date, now: Date, bucketOf: (Date) -> Date) -> [PeriodTotal] {

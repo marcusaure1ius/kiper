@@ -29,6 +29,9 @@ struct AnalyticsScreen: View {
                 VStack(spacing: 16) {
                     SpendingChartCard(period: $period, selection: $selection)
                     CategoryRingsCard(period: period, interval: selection)
+                    MonthOverMonthCard()
+                    AnnualCostCard()
+                    DuplicatesCard()
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
@@ -36,6 +39,97 @@ struct AnalyticsScreen: View {
             .background { AmbientBackground() }
             .navigationTitle("Аналитика")
             .withRoutes()
+        }
+    }
+}
+
+/// Same-span month comparison: "now vs last month up to the same day".
+private struct MonthOverMonthCard: View {
+    @Environment(AppStore.self) private var store
+
+    var body: some View {
+        if let delta = store.monthOverMonth() {
+            Card {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Месяц к месяцу").font(.headline)
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Image(systemName: delta.delta > 0 ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
+                            .foregroundStyle(delta.delta > 0 ? .orange : .green)
+                        Text(Fmt.rub(abs(delta.delta)))
+                            .font(.system(.title, design: .rounded).weight(.bold))
+                            .monospacedDigit()
+                            .contentTransition(.numericText())
+                    }
+                    Text("\(Fmt.rub(delta.current)) списано сейчас против \(Fmt.rub(delta.previous)) в прошлом месяце к этому дню")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+}
+
+/// Steady-state year cost with the top-3 contributors.
+private struct AnnualCostCard: View {
+    @Environment(AppStore.self) private var store
+
+    var body: some View {
+        let forecast = store.annualForecast()
+        if forecast.totalRub > 0 {
+            Card {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Годовая стоимость").font(.headline)
+                    Text(Fmt.rub(forecast.totalRub))
+                        .font(.system(.title, design: .rounded).weight(.bold))
+                        .monospacedDigit()
+                    Text("если ничего не менять")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.bottom, 6)
+                    ForEach(forecast.top) { item in
+                        SubscriptionRow(subscription: item.subscription, subtitle: "\(Fmt.rub(item.perYearRub)) в год")
+                            .padding(.vertical, 6)
+                        if item.id != forecast.top.last?.id {
+                            Divider().padding(.leading, 58)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Likely duplicates: same domain or a similar name in one category.
+private struct DuplicatesCard: View {
+    @Environment(AppStore.self) private var store
+
+    var body: some View {
+        let groups = store.duplicateGroups()
+        if !groups.isEmpty {
+            Card {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Похожие подписки", systemImage: "square.stack.3d.up.slash.fill")
+                        .font(.headline)
+                    Text("Похоже на дубликаты — проверьте, нужны ли обе")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.bottom, 6)
+                    ForEach(groups, id: \.first!.id) { group in
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(group) { sub in
+                                NavigationLink(value: Route.detail(sub.id)) {
+                                    SubscriptionRow(subscription: sub, subtitle: sub.billingPeriod.label)
+                                        .padding(.vertical, 6)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(10)
+                        .background(.ultraThinMaterial, in: .rect(cornerRadius: 18, style: .continuous))
+                        .padding(.bottom, 8)
+                    }
+                }
+            }
         }
     }
 }

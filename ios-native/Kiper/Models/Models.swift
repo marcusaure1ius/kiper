@@ -173,3 +173,17 @@ struct CategoryShare: Identifiable {
     let total: Double
     var id: String { category?.id ?? "none" }
 }
+
+/// Month-over-month comparison of actually charged money (see `AppStore.monthOverMonth`).
+struct MonthDelta: Equatable {
+    let current: Double
+    let previous: Double
+    var delta: Double { current - previous }
+}
+
+/// A subscription with its projected year cost (see `AppStore.annualForecast`).
+struct AnnualCost: Identifiable {
+    let subscription: Subscription
+    let perYearRub: Double
+    var id: String { subscription.id }
+}
