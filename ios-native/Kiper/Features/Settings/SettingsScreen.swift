@@ -13,6 +13,7 @@ struct SettingsScreen: View {
     @State private var pickerMode: PickerMode = .importFile
     private enum PickerMode { case importFile, backupFolder }
     @State private var pendingBackup: BackupFile?
+    @State private var statementCandidates: [StatementCandidate]?
     @State private var importError: String?
     @State private var editingCategory: Category?
     @State private var addingCategory = false
@@ -187,7 +188,7 @@ struct SettingsScreen: View {
                 } header: {
                     Text("Данные")
                 } footer: {
-                    Text("Формат совместим с Кипером для Android. JSON переносит подписки и категории, CSV — только подписки.")
+                    Text("Формат совместим с Кипером для Android. JSON переносит подписки и категории, CSV — только подписки. Выписка из банка (CSV/TXT) ищет регулярные платежи.")
                 }
 
                 Section {
@@ -240,6 +241,11 @@ struct SettingsScreen: View {
                     Text("В файле \(file.subscriptions.count) \(Fmt.plural(file.subscriptions.count, "подписка", "подписки", "подписок")) и \(file.categories.count) \(Fmt.plural(file.categories.count, "категория", "категории", "категорий")). При добавлении совпадающие записи обновятся.")
                 }
             }
+            .sheet(isPresented: Binding(get: { statementCandidates != nil }, set: { if !$0 { statementCandidates = nil } })) {
+                if let candidates = statementCandidates {
+                    StatementImportScreen(candidates: candidates)
+                }
+            }
             .alert("Не удалось импортировать", isPresented: Binding(get: { importError != nil }, set: { if !$0 { importError = nil } })) {
                 Button("OK") {}
             } message: {
@@ -282,9 +288,17 @@ struct SettingsScreen: View {
             let text = String(decoding: data, as: UTF8.self)
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: "\u{FEFF}")))
             if url.pathExtension.lowercased() == "csv" || !trimmed.hasPrefix("{") {
-                let result = store.importCSV(text)
-                guard result.subscriptions > 0 else { throw BackupError.unreadable }
-                store.show("Импортировано: \(result.subscriptions) \(Fmt.plural(result.subscriptions, "подписка", "подписки", "подписок"))")
+                // A Kiper CSV has a known header; anything else may be a bank statement.
+                let firstLine = trimmed.prefix { !$0.isNewline }
+                if firstLine.contains("billingPeriod") || firstLine.contains("nextBillingDate") {
+                    let result = store.importCSV(text)
+                    guard result.subscriptions > 0 else { throw BackupError.unreadable }
+                    store.show("Импортировано: \(result.subscriptions) \(Fmt.plural(result.subscriptions, "подписка", "подписки", "подписок"))")
+                } else {
+                    let candidates = StatementImporter.parse(text)
+                    guard !candidates.isEmpty else { throw BackupError.unreadable }
+                    statementCandidates = candidates
+                }
             } else {
                 pendingBackup = try BackupMapper.decode(data)
             }

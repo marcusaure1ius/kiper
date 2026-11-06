@@ -249,6 +249,56 @@ final class AppStore {
             .max { $0.date < $1.date }
     }
 
+    // MARK: - Statement import
+
+    /// Creates a subscription from a bank-statement detection and backfills its
+    /// history with the occurrences already paid (source: .bank).
+    @discardableResult
+    func createFromCandidate(_ candidate: StatementCandidate, now: Date = .now) -> Subscription {
+        let (period, customDays) = candidate.billingPeriod
+        var sub = Subscription(
+            id: UUID().uuidString, name: candidate.name,
+            amount: candidate.medianAmount, currency: .rub,
+            billingPeriod: period, customPeriodDays: customDays,
+            nextBillingDate: candidate.nextCharge(now: now),
+            startDate: candidate.occurrences.first!.date
+        )
+        sub.createdAt = now
+        recordStatementHistory(candidate, for: sub, now: now)
+        upsert(sub)
+        show("Подписка «\(sub.name)» создана из выписки")
+        return sub
+    }
+
+    /// Links detected occurrences to an existing subscription as paid history.
+    func attachStatement(_ candidate: StatementCandidate, to id: String, now: Date = .now) {
+        guard var sub = subscription(id: id) else { return }
+        recordStatementHistory(candidate, for: sub, now: now)
+        // A bank statement knows charges more recent than our own grid.
+        if candidate.lastDate > sub.nextBillingDate {
+            sub.nextBillingDate = candidate.nextCharge(now: now)
+            upsert(sub)
+        }
+        didChange()
+        show("История «\(sub.name)» пополнена из выписки")
+    }
+
+    private func recordStatementHistory(_ candidate: StatementCandidate, for sub: Subscription, now: Date) {
+        let today = Calendar.current.startOfDay(for: now)
+        for occurrence in candidate.occurrences where Calendar.current.startOfDay(for: occurrence.date) <= today {
+            let record = PaymentRecord(
+                subscriptionId: sub.id, date: occurrence.date,
+                amount: occurrence.amount, currency: .rub,
+                amountRub: occurrence.amount, kind: .charge, source: .bank
+            )
+            if let i = payments.firstIndex(where: { $0.id == record.id }) {
+                payments[i] = record
+            } else {
+                payments.append(record)
+            }
+        }
+    }
+
     /// Moves past `nextBillingDate`s of active subscriptions forward (Android: `advanceBillingDates`).
     /// Trials whose end has passed become active here. Returns true if anything changed.
     @discardableResult
