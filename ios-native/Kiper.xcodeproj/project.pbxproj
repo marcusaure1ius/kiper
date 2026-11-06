@@ -38,7 +38,7 @@
 		D10000000000000000000014 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "$(CONTENTS_FOLDER_PATH)/PlugIns";
+			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
 				D10000000000000000000015 /* KiperWidgets.appex in Embed Foundation Extensions */,
@@ -153,6 +153,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				D10000000000000000000009 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A10000000000000000000002 /* Kiper */,
@@ -337,6 +338,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		D10000000000000000000009 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D10000000000000000000006 /* KiperWidgets */;
+			targetProxy = D10000000000000000000011 /* PBXContainerItemProxy */;
+		};
 		B10000000000000000000009 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A10000000000000000000006 /* Kiper */;
@@ -533,8 +539,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 729P86DA2P;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Кипер Виджеты";
-				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = com.apple.widgetkit-extension;
+				INFOPLIST_FILE = KiperWidgets-Info.plist;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ru.kiper.ios.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -552,8 +557,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 729P86DA2P;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Кипер Виджеты";
-				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = com.apple.widgetkit-extension;
+				INFOPLIST_FILE = KiperWidgets-Info.plist;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ru.kiper.ios.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
