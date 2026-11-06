@@ -17,6 +17,7 @@ struct SettingsScreen: View {
     @State private var addingCategory = false
     @State private var deletingCategory: Category?
     @State private var confirmReset = false
+    @State private var budgetText = ""
 
     var body: some View {
         @Bindable var store = store
@@ -63,6 +64,21 @@ struct SettingsScreen: View {
                     Text("Напоминания")
                 } footer: {
                     Text("Уведомление приходит в это время — за столько дней до списания, сколько указано в подписке.")
+                }
+
+                Section {
+                    LabeledContent("Лимит, ₽ в месяц") {
+                        TextField("Не задан", text: $budgetText)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .onChange(of: budgetText) { _, new in
+                                store.monthlyBudgetRub = Double(new.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
+                            }
+                    }
+                } header: {
+                    Text("Бюджет")
+                } footer: {
+                    Text("Лимит на все подписки в месяц. Карточка на главной покажет прогресс и подсветит превышение.")
                 }
 
                 Section("Категории") {
@@ -161,6 +177,7 @@ struct SettingsScreen: View {
                 }
             }
             .scrollContentBackground(.hidden)
+            .onAppear { budgetText = store.monthlyBudgetRub.map { String(format: "%.0f", $0) } ?? "" }
             .background { AmbientBackground() }
             .navigationTitle("Настройки")
             .sheet(item: $editingCategory) { CategoryEditorSheet(editing: $0) }

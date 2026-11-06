@@ -134,8 +134,29 @@ struct TrialTests {
 }
 
 @MainActor
-struct ResetTests {
-    @Test func resetWipesSubscriptionsAndRestoresCategories() {
+struct BudgetTests {
+    @Test func budgetTravelsWithTheBackupFile() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("kiper-\(UUID().uuidString).json")
+        let store = makeStore(file: url)
+        #expect(store.monthlyBudgetRub == nil)
+
+        store.monthlyBudgetRub = 25_000
+        #expect(store.backup().settings["budgetRub"] == "25000.0")
+        #expect(try BackupMapper.decode(Data(contentsOf: url)).settings["budgetRub"] == "25000.0", "written to disk")
+        #expect(makeStore(file: url).monthlyBudgetRub == 25_000, "restored on next launch")
+    }
+
+    @Test func importRestoresBudget() {
+        let store = makeStore()
+        var file = BackupMapper.file(subscriptions: [], categories: [])
+        file.settings = ["budgetRub": "30000"]
+        store.importBackup(file, mode: .merge)
+        #expect(store.monthlyBudgetRub == 30000)
+    }
+}
+
+@MainActor
+struct ResetTests {    @Test func resetWipesSubscriptionsAndRestoresCategories() {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("kiper-\(UUID().uuidString).json")
         let store = makeStore(seed: true, file: url)
         store.deleteCategory("cat-ai")

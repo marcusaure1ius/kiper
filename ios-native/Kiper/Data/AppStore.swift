@@ -31,6 +31,11 @@ final class AppStore {
             scheduleReminders()
         }
     }
+    /// Monthly spending cap for all subscriptions (RUB). Lives in the backup file's
+    /// `settings` so it travels with exports; the home card turns orange past it.
+    var monthlyBudgetRub: Double? {
+        didSet { save() }
+    }
     /// Notifications denied in system Settings while reminders are on.
     private(set) var remindersBlocked = false
 
@@ -48,6 +53,8 @@ final class AppStore {
         static let remindersEnabled = "reminders.enabled"
         static let reminderHour = "reminders.hour"
         static let reminderMinute = "reminders.minute"
+        /// Key inside `BackupFile.settings`.
+        static let backupBudget = "budgetRub"
     }
 
     /// - Parameters:
@@ -72,6 +79,7 @@ final class AppStore {
                     if let sub = BackupMapper.subscription(dto) { subscriptions.append(sub) } else { unparsed.append(dto) }
                 }
                 payments = (file.payments ?? []).compactMap(BackupMapper.payment)
+                monthlyBudgetRub = Double(file.settings[Keys.backupBudget] ?? "")
             } else {
                 // First launch: seed categories (always) and demo subscriptions (debug only).
                 categories = SeedData.categories
@@ -354,6 +362,7 @@ final class AppStore {
     func backup(now: Date = .now) -> BackupFile {
         var file = BackupMapper.file(subscriptions: subscriptions, categories: categories, payments: payments, now: now)
         file.subscriptions += unparsed
+        if let monthlyBudgetRub { file.settings[Keys.backupBudget] = String(monthlyBudgetRub) }
         return file
     }
 
@@ -396,6 +405,7 @@ final class AppStore {
             subscriptions[i].categoryId = nil
         }
         if mode == .replace { loadError = nil }
+        if let raw = file.settings[Keys.backupBudget] { monthlyBudgetRub = Double(raw) }
         advanceBillingDates()
         didChange()
         return ImportResult(subscriptions: subs.count, categories: cats.count, skipped: file.subscriptions.count - subs.count)

@@ -116,7 +116,14 @@ private struct MonthSummaryCard: View {
     var body: some View {
         let progress = store.monthProgress()
         let total = progress.paid + progress.remaining
-        let fraction = total > 0 ? progress.paid / total : 0
+        let budget = store.monthlyBudgetRub
+        let overBudget = budget.map { total > $0 } ?? false
+        // Without a budget the bar shows paid-of-total; with one — committed spend of the budget.
+        let fraction = if let budget {
+            min(total / max(budget, 1), 1)
+        } else {
+            total > 0 ? progress.paid / total : 0
+        }
 
         VStack(alignment: .leading, spacing: 14) {
             Text(Fmt.monthName(.now))
@@ -128,12 +135,28 @@ private struct MonthSummaryCard: View {
                 .monospacedDigit()
 
             ProgressView(value: fraction)
+                .tint(overBudget ? .orange : nil)
                 .scaleEffect(y: 1.6)
 
             HStack {
                 stat("Оплачено", progress.paid, systemImage: "checkmark.circle.fill")
                 Spacer()
                 stat("Осталось", progress.remaining, systemImage: "clock.fill")
+            }
+
+            if let budget {
+                HStack {
+                    Label("Бюджет · \(Fmt.rub(budget))", systemImage: overBudget ? "exclamationmark.triangle.fill" : "target")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(overBudget ? .orange : .secondary)
+                    Spacer()
+                    if overBudget {
+                        Text("перерасход \(Fmt.rub(total - budget))")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.orange)
+                            .monospacedDigit()
+                    }
+                }
             }
         }
         .padding(22)
@@ -142,6 +165,7 @@ private struct MonthSummaryCard: View {
         .modifier(HolographicSheen(cornerRadius: 32))
         .padding(.top, 8)
         .animation(.smooth, value: store.monthlyTotalRub)
+        .animation(.smooth, value: store.monthlyBudgetRub)
     }
 
     private func stat(_ title: String, _ value: Double, systemImage: String) -> some View {
