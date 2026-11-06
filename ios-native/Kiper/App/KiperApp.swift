@@ -27,6 +27,7 @@ struct KiperApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var store = KiperApp.makeStore()
     @State private var appLock = AppLock()
+    @State private var appCloud = CloudSyncEngine()
     @AppStorage("themeMode") private var themeMode: ThemeMode = .system
     @Environment(\.scenePhase) private var scenePhase
 
@@ -54,9 +55,12 @@ struct KiperApp: App {
                 .environment(store)
                 .environment(appDelegate.router)
                 .environment(appLock)
+                .environment(appCloud)
                 .task {
+                    store.cloudEngine = appCloud
                     // Ask once on first launch (reminders default to on, like Android).
                     if store.remindersEnabled { await store.enableReminders() }
+                    if appCloud.isEnabled { await appCloud.sync(store) }
                     #if DEBUG
                     if ProcessInfo.processInfo.arguments.contains("-KiperTestReminder"), let sub = store.active.first {
                         await Reminders.scheduleTest(for: sub)
@@ -65,7 +69,12 @@ struct KiperApp: App {
                 }
                 .onChange(of: scenePhase) { _, phase in
                     appLock.scenePhaseChanged(phase)
-                    if phase == .active { Task { await store.refreshOnForeground() } }
+                    if phase == .active {
+                        Task {
+                            await store.refreshOnForeground()
+                            if appCloud.isEnabled { await appCloud.sync(store) }
+                        }
+                    }
                 }
                 .preferredColorScheme(themeMode.colorScheme)
                 .environment(\.locale, Locale(identifier: "ru_RU"))

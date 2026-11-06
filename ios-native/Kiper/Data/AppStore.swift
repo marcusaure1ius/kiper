@@ -42,6 +42,9 @@ final class AppStore {
     /// Copies of the data into a user-picked Files folder (e.g. iCloud Drive).
     let autoBackup: AutoBackup
 
+    /// CloudKit sync engine, attached by the app entry point (`nil` in tests/previews).
+    var cloudEngine: CloudSyncEngine?
+
     /// Transient confirmation shown at the top of the app.
     var toast: Toast?
 
@@ -201,6 +204,7 @@ final class AppStore {
             subscriptions[i].categoryId = nil
         }
         categories.removeAll { $0.id == id }
+        cloudEngine?.recordTombstone(categoryId: id)
         didChange()
     }
 
@@ -348,6 +352,7 @@ final class AppStore {
         save()
         scheduleReminders()
         autoBackup.schedule { [unowned self] in self.backup() }
+        cloudEngine?.schedulePush(self)
     }
 
     private func save() {
@@ -512,6 +517,38 @@ final class AppStore {
         }
         let file = BackupFile(exportedAt: "", subscriptions: subs.map(BackupMapper.dto), categories: [])
         return importBackup(file, mode: .merge)
+    }
+
+    // MARK: - Cloud merge (called by CloudSyncEngine's pull; no side effects)
+
+    func upsertSilently(_ sub: Subscription) {
+        if let i = subscriptions.firstIndex(where: { $0.id == sub.id }) {
+            subscriptions[i] = sub
+        } else {
+            subscriptions.append(sub)
+        }
+    }
+
+    func upsertCategorySilently(_ cat: Category) {
+        if let i = categories.firstIndex(where: { $0.id == cat.id }) {
+            categories[i] = cat
+        } else {
+            categories.append(cat)
+        }
+    }
+
+    func upsertPaymentSilently(_ record: PaymentRecord) {
+        if let i = payments.firstIndex(where: { $0.id == record.id }) {
+            payments[i] = record
+        } else {
+            payments.append(record)
+        }
+    }
+
+    /// One save + reminder pass after a cloud pull merged silently.
+    func finishCloudMerge() {
+        advanceBillingDates()
+        didChange()
     }
 
     // MARK: - Home

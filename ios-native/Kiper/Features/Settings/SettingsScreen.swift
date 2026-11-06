@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 struct SettingsScreen: View {
     @Environment(AppStore.self) private var store
     @Environment(AppLock.self) private var appLock
+    @Environment(CloudSyncEngine.self) private var appCloud
     @AppStorage("themeMode") private var themeMode: ThemeMode = .system
     @AppStorage("backgroundStyle") private var backgroundStyle: BackgroundStyle = .lavender
     /// One file picker for both uses — SwiftUI ignores a second `.fileImporter` in the same view.
@@ -93,6 +94,8 @@ struct SettingsScreen: View {
                 } footer: {
                     Text("Кипер будет просить Face ID или код-пароль при запуске и после сворачивания.")
                 }
+
+                CloudSyncSection()
 
                 Section("Категории") {
                     ForEach(store.categories) { cat in
@@ -314,6 +317,49 @@ struct SettingsScreen: View {
                    symbol: result.skipped > 0 ? "exclamationmark.circle.fill" : "checkmark.circle.fill",
                    tint: result.skipped > 0 ? .orange : .green)
         pendingBackup = nil
+    }
+}
+
+/// iCloud sync toggle + status line (its own view — the Settings form is heavy).
+private struct CloudSyncSection: View {
+    @Environment(CloudSyncEngine.self) private var appCloud
+
+    var body: some View {
+        Section {
+            Toggle("Синхронизация iCloud", isOn: Binding(
+                get: { appCloud.isEnabled },
+                set: { newValue in Task { await appCloud.setEnabled(newValue) } }
+            ))
+            if appCloud.isEnabled {
+                CloudStatusRow(status: appCloud.status)
+            }
+        } header: {
+            Text("Синхронизация")
+        } footer: {
+            Text("Подписки, категории и история платежей синхронизируются через ваш iCloud (CloudKit, приватная база). Работает только в подписанной сборке с включённым iCloud.")
+        }
+    }
+}
+
+/// Current iCloud sync state, one line.
+private struct CloudStatusRow: View {
+    let status: CloudSyncEngine.Status
+
+    var body: some View {
+        switch status {
+        case .idle:
+            Label("Ожидание первой синхронизации", systemImage: "icloud")
+                .foregroundStyle(.secondary)
+        case .syncing:
+            Label("Синхронизация…", systemImage: "icloud.and.arrow.up.down")
+                .foregroundStyle(.secondary)
+        case .upToDate(let date):
+            Label("Обновлено \(Fmt.smartDate(date).lowercased())", systemImage: "checkmark.icloud.fill")
+                .foregroundStyle(.green)
+        case .error(let message):
+            Label(message, systemImage: "exclamationmark.icloud")
+                .foregroundStyle(.orange)
+        }
     }
 }
 
