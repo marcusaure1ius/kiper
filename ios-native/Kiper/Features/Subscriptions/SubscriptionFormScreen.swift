@@ -31,7 +31,7 @@ struct SubscriptionForm: View {
     @State private var openDate: DateField?
 
     private enum Field { case name, amount }
-    private enum DateField { case next }
+    private enum DateField { case next, trialEnd }
 
     init(editing: Subscription? = nil, preset: FormPreset? = nil, showsCancel: Bool = false, onDone: @escaping () -> Void) {
         existing = editing
@@ -102,7 +102,13 @@ struct SubscriptionForm: View {
             }
 
             Section {
-                DateRow(title: "Дата списания", date: $draft.nextBillingDate, isOpen: openBinding(.next))
+                Toggle("Триал (бесплатный период)", isOn: trialToggle)
+                if draft.status == .trial {
+                    DateRow(title: "Окончание триала", date: trialEnd, isOpen: openBinding(.trialEnd))
+                    DateRow(title: "Первое списание", date: $draft.nextBillingDate, isOpen: openBinding(.next))
+                } else {
+                    DateRow(title: "Дата списания", date: $draft.nextBillingDate, isOpen: openBinding(.next))
+                }
                 Picker("Напоминание", selection: $draft.reminderDaysBefore) {
                     Text("Выключено").tag(0)
                     Text("За 1 день").tag(1)
@@ -129,9 +135,10 @@ struct SubscriptionForm: View {
                 Button(role: .confirm) {
                     draft.amount = amount ?? 0
                     // No separate start date in the form: a new subscription starts with
-                    // its first charge; an edited one never starts after its next charge.
+                    // its first charge (a trial starts today); an edited one never starts
+                    // after its next charge.
                     if existing == nil || draft.nextBillingDate < draft.startDate {
-                        draft.startDate = draft.nextBillingDate
+                        draft.startDate = draft.status == .trial ? .now : draft.nextBillingDate
                     }
                     withAnimation { store.upsert(draft) }
                     store.show(existing == nil ? "Подписка добавлена" : "Изменения сохранены")
@@ -148,6 +155,38 @@ struct SubscriptionForm: View {
             try? await Task.sleep(for: .milliseconds(450))
             focus = draft.name.isEmpty ? .name : .amount
         }
+    }
+
+    /// Trial switch: on → free period ending in a week (new subscriptions put the
+    /// first charge at the trial end); off → back to the previous active state.
+    private var trialToggle: Binding<Bool> {
+        Binding(
+            get: { draft.status == .trial },
+            set: { on in
+                if on {
+                    draft.status = .trial
+                    if draft.trialEndDate == nil {
+                        draft.trialEndDate = Calendar.current.date(byAdding: .day, value: 7, to: .now)!
+                    }
+                    if existing == nil { draft.nextBillingDate = draft.trialEndDate! }
+                } else if draft.status == .trial {
+                    draft.status = .active
+                    draft.trialEndDate = nil
+                }
+            }
+        )
+    }
+
+    /// Moving the trial end moves the first charge along, unless it was set apart.
+    private var trialEnd: Binding<Date> {
+        Binding(
+            get: { draft.trialEndDate ?? .now },
+            set: { new in
+                let old = draft.trialEndDate
+                draft.trialEndDate = new
+                if let old, draft.nextBillingDate == old { draft.nextBillingDate = new }
+            }
+        )
     }
 
     /// Only one inline calendar open at a time, like event editing in Calendar.

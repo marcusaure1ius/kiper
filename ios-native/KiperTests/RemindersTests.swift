@@ -39,4 +39,15 @@ struct RemindersTests {
         let many = (0..<80).map { makeSub(id: "\($0)", next: day(2026, 10, 20), start: start) }
         #expect(Reminders.plan(subscriptions: many, hour: 9, minute: 0, now: now).count == Reminders.limit)
     }
+
+    @Test func trialReminderFiresOnceBeforeTrialEnd() throws {
+        var sub = makeSub(id: "t", name: "Netflix", amount: 22.99, currency: .usd, next: day(2026, 10, 20), start: day(2026, 10, 6), reminder: 3)
+        sub.status = .trial
+        sub.trialEndDate = day(2026, 10, 20)
+        let plans = Reminders.plan(subscriptions: [sub], hour: 10, minute: 30, now: day(2026, 10, 1))
+        #expect(plans.count == 1, "a trial gets a single reminder, not one per upcoming charge")
+        let plan = try #require(plans.first)
+        #expect(plan.fireDate == Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 17, hour: 10, minute: 30)))
+        #expect(plan.body == "Netflix — триал заканчивается через 3 дня, спишется 22,99 $")
+    }
 }

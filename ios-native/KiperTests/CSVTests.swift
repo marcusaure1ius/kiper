@@ -6,13 +6,16 @@ struct CSVTests {
     @Test func roundTripWithAwkwardText() {
         var sub = makeSub(id: "1", name: "Plan, \"Pro\"", amount: 9.99, currency: .eur, next: day(2026, 11, 5), start: day(2026, 1, 5))
         sub.note = "line one\nline two"
+        sub.status = .trial
+        sub.trialEndDate = day(2026, 11, 12)
         let text = CSVCodec.encode([sub])
-        #expect(text.hasPrefix("id,name,amount,currency,billingPeriod,customPeriodDays,categoryId,nextBillingDate,startDate,status,reminderDaysBefore,note\n"))
+        #expect(text.hasPrefix("id,name,amount,currency,billingPeriod,customPeriodDays,categoryId,nextBillingDate,startDate,status,reminderDaysBefore,note,trialEndDate\n"))
         let back = CSVCodec.decode(text)
         #expect(back.count == 1)
         #expect(back[0].name == "Plan, \"Pro\"")
         #expect(back[0].note == "line one\nline two")
         #expect(back[0].amount == 9.99 && back[0].currency == .eur)
+        #expect(back[0].status == .trial && back[0].trialEndDate == day(2026, 11, 12))
     }
 
     @Test func androidCSVAndBadRows() {

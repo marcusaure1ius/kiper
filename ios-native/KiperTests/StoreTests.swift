@@ -82,6 +82,58 @@ struct StoreTests {
 }
 
 @MainActor
+struct TrialTests {
+    private func trial(id: String = "t", amount: Double = 600, end: Date, start: Date) -> Subscription {
+        var sub = makeSub(id: id, name: "Figma", amount: amount, next: end, start: start)
+        sub.status = .trial
+        sub.trialEndDate = end
+        return sub
+    }
+
+    @Test func trialStaysTrialAndSkipsSteadySpending() {
+        let store = makeStore()
+        store.upsert(trial(end: day(2026, 12, 6), start: day(2026, 11, 6)))
+        #expect(store.subscription(id: "t")?.status == .trial)
+        #expect(store.monthlyTotalRub == 0, "money isn't flowing yet")
+        // The scheduled first charge still shows as an upcoming payment.
+        #expect(store.futurePayments(now: day(2026, 11, 10)).contains { $0.subscription.id == "t" })
+    }
+
+    @Test func trialCountsAsRemainingButNotPaid() {
+        let store = makeStore()
+        store.upsert(trial(amount: 500, end: day(2026, 11, 20), start: day(2026, 11, 6)))
+        let progress = store.monthProgress(now: day(2026, 11, 10))
+        #expect(progress.paid == 0)
+        #expect(abs(progress.remaining - 500) < 0.001)
+    }
+
+    @Test func endedTrialBecomesActiveWithHistoryAtFirstCharge() throws {
+        let store = makeStore()
+        store.upsert(trial(end: day(2026, 12, 6), start: day(2026, 11, 6)))
+        store.advanceBillingDates(now: day(2027, 1, 3))
+
+        let saved = try #require(store.subscription(id: "t"))
+        #expect(saved.status == .active)
+        #expect(saved.trialEndDate == nil)
+        #expect(saved.startDate == day(2026, 12, 6), "paid history starts at the first charge")
+        #expect(saved.nextBillingDate == day(2027, 1, 6), "rolled forward on the same grid")
+        // December analytics now include the conversion charge, the trial days don't.
+        let december = try #require(store.monthlyTotals(past: 2, future: 0, now: day(2027, 1, 3))
+            .first { Calendar.current.isDate($0.start, equalTo: day(2026, 12, 1), toGranularity: .month) })
+        #expect(abs(december.amount - 600) < 0.001)
+    }
+
+    @Test func endTrialMenuActionStartsCharges() throws {
+        let store = makeStore()
+        store.upsert(trial(end: day(2026, 12, 1), start: day(2026, 11, 6)))
+        store.endTrial("t")
+        let saved = try #require(store.subscription(id: "t"))
+        #expect(saved.status == .active && saved.trialEndDate == nil)
+        #expect(saved.startDate == day(2026, 12, 1))
+    }
+}
+
+@MainActor
 struct ResetTests {
     @Test func resetWipesSubscriptionsAndRestoresCategories() {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("kiper-\(UUID().uuidString).json")

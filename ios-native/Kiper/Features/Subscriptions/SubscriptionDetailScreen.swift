@@ -35,11 +35,17 @@ struct SubscriptionDetailScreen: View {
 
             Section {
                 row("Период", sub.billingPeriod == .custom ? "Каждые \(sub.customPeriodDays ?? 30) дн." : sub.billingPeriod.label)
-                row("Следующее списание", "\(Fmt.fullDate(sub.nextBillingDate)) · \(Fmt.relative(sub.nextBillingDate).lowercased())")
+                row(sub.status == .trial ? "Первое списание" : "Следующее списание",
+                    "\(Fmt.fullDate(sub.nextBillingDate)) · \(Fmt.relative(sub.nextBillingDate).lowercased())")
+                if sub.status == .trial, let end = sub.trialEndDate {
+                    row("Триал до", "\(Fmt.fullDate(end)) · \(Fmt.relative(end).lowercased())")
+                }
                 row("Дата начала", Fmt.fullDate(sub.startDate))
                 row("Статус", sub.status.label)
                 row("Напоминание", sub.reminderDaysBefore == 0 ? "Выключено" : "За \(sub.reminderDaysBefore) дн.")
-                row("В месяц", Fmt.rub(store.toRub(sub.amount, sub.currency) * sub.billingPeriod.monthlyEquivalent))
+                if sub.status != .trial {
+                    row("В месяц", Fmt.rub(store.toRub(sub.amount, sub.currency) * sub.billingPeriod.monthlyEquivalent))
+                }
             }
 
             if let note = sub.note, !note.isEmpty {
@@ -56,12 +62,19 @@ struct SubscriptionDetailScreen: View {
             ToolbarSpacer(.fixed, placement: .topBarTrailing)
             ToolbarItem(placement: .topBarTrailing) {
                 Menu("Ещё", systemImage: "ellipsis") {
-                    Button(sub.status == .paused ? "Возобновить" : "Приостановить",
-                           systemImage: sub.status == .paused ? "play.fill" : "pause.fill") {
-                        withAnimation { store.togglePause(sub.id) }
-                        store.show(sub.status == .paused ? "Подписка возобновлена" : "Подписка на паузе",
-                                   symbol: sub.status == .paused ? "play.circle.fill" : "pause.circle.fill",
-                                   tint: sub.status == .paused ? .green : .orange)
+                    if sub.status == .trial {
+                        Button("Завершить триал", systemImage: "play.circle.fill") {
+                            withAnimation { store.endTrial(sub.id) }
+                            store.show("Триал завершён — подписка активна")
+                        }
+                    } else {
+                        Button(sub.status == .paused ? "Возобновить" : "Приостановить",
+                               systemImage: sub.status == .paused ? "play.fill" : "pause.fill") {
+                            withAnimation { store.togglePause(sub.id) }
+                            store.show(sub.status == .paused ? "Подписка возобновлена" : "Подписка на паузе",
+                                       symbol: sub.status == .paused ? "play.circle.fill" : "pause.circle.fill",
+                                       tint: sub.status == .paused ? .green : .orange)
+                        }
                     }
                     Button("Отменить подписку", systemImage: "xmark.circle", role: .destructive) {
                         confirmCancel = true

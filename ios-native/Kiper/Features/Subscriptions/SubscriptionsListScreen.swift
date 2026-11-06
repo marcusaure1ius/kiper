@@ -11,7 +11,16 @@ struct SubscriptionsListScreen: View {
             .filter { $0.status != .cancelled }
             .filter { filter == nil || $0.categoryId == filter }
             .filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }
-            .sorted { ($0.status == .active ? 0 : 1, $0.nextBillingDate) < ($1.status == .active ? 0 : 1, $1.nextBillingDate) }
+            .sorted { (rank($0), $0.nextBillingDate) < (rank($1), $1.nextBillingDate) }
+    }
+
+    /// Active first, then trials (upcoming money), then paused.
+    private func rank(_ sub: Subscription) -> Int {
+        switch sub.status {
+        case .active: 0
+        case .trial: 1
+        default: 2
+        }
     }
 
     var body: some View {
@@ -66,6 +75,7 @@ struct SubscriptionsListScreen: View {
 
     private func subtitle(for sub: Subscription) -> String {
         if sub.status == .paused { return "Приостановлена" }
+        if sub.status == .trial, let end = sub.trialEndDate { return "Триал до \(Fmt.day(end))" }
         return "\(sub.billingPeriod.label) · \(Fmt.day(sub.nextBillingDate))"
     }
 }

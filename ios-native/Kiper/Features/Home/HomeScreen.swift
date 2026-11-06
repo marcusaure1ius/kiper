@@ -70,14 +70,17 @@ struct HomeScreen: View {
 
             let events = Array(store.futurePayments(days: 30).prefix(6))
             if events.isEmpty {
+                // Trials count as subscriptions here too — a lone trial with a far-away
+                // first charge is still "нет списаний", not "нет подписок".
+                let empty = store.notCancelled.isEmpty
                 VStack(spacing: 10) {
-                    Image(systemName: store.active.isEmpty ? "tray" : "checkmark.seal")
+                    Image(systemName: empty ? "tray" : "checkmark.seal")
                         .font(.system(size: 34))
                         .foregroundStyle(.tint)
                         .symbolEffect(.bounce, value: store.active.count)
-                    Text(store.active.isEmpty ? "Пока нет подписок" : "В ближайший месяц списаний нет")
+                    Text(empty ? "Пока нет подписок" : "В ближайший месяц списаний нет")
                         .font(.subheadline.weight(.semibold))
-                    if store.active.isEmpty {
+                    if empty {
                         Text("Добавьте первую — Кипер напомнит о списании заранее.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)

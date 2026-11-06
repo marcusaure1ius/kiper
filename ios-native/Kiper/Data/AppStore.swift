@@ -119,6 +119,9 @@ final class AppStore {
 
     var active: [Subscription] { subscriptions.filter { $0.status == .active } }
     var notCancelled: [Subscription] { subscriptions.filter { $0.status != .cancelled } }
+    /// Trials don't generate charge history yet, so analytics skips them
+    /// (they still show their scheduled first charge on the Home screen).
+    var chargeable: [Subscription] { subscriptions.filter { $0.status != .cancelled && $0.status != .trial } }
 
     // MARK: - Mutations
 
@@ -133,8 +136,20 @@ final class AppStore {
     }
 
     func togglePause(_ id: String) {
-        guard let i = subscriptions.firstIndex(where: { $0.id == id }) else { return }
+        guard let i = subscriptions.firstIndex(where: { $0.id == id }),
+              subscriptions[i].status == .active || subscriptions[i].status == .paused else { return }
         subscriptions[i].status = subscriptions[i].status == .paused ? .active : .paused
+        advanceBillingDates()
+        didChange()
+    }
+
+    /// Finishes the trial early or on time (Detail → «Завершить триал»):
+    /// the subscription becomes active and paid history starts at its first charge.
+    func endTrial(_ id: String) {
+        guard let i = subscriptions.firstIndex(where: { $0.id == id }), subscriptions[i].status == .trial else { return }
+        subscriptions[i].status = .active
+        subscriptions[i].trialEndDate = nil
+        subscriptions[i].startDate = subscriptions[i].nextBillingDate
         advanceBillingDates()
         didChange()
     }
@@ -165,11 +180,21 @@ final class AppStore {
     }
 
     /// Moves past `nextBillingDate`s of active subscriptions forward (Android: `advanceBillingDates`).
-    /// Returns true if anything changed.
+    /// Trials whose end has passed become active here. Returns true if anything changed.
     @discardableResult
     func advanceBillingDates(now: Date = .now) -> Bool {
         let today = Calendar.current.startOfDay(for: now)
         var changed = false
+        // A trial that ended while we were away becomes active. Paid history starts
+        // at the first charge (the old nextBillingDate), so the trial days never
+        // produce phantom charges in analytics.
+        for i in subscriptions.indices where subscriptions[i].status == .trial {
+            guard let end = subscriptions[i].trialEndDate, Calendar.current.startOfDay(for: end) < today else { continue }
+            subscriptions[i].status = .active
+            subscriptions[i].trialEndDate = nil
+            subscriptions[i].startDate = subscriptions[i].nextBillingDate
+            changed = true
+        }
         for i in subscriptions.indices where subscriptions[i].status == .active {
             guard Calendar.current.startOfDay(for: subscriptions[i].nextBillingDate) < today else { continue }
             let next = Schedule.firstCharge(of: subscriptions[i], onOrAfter: today)
@@ -346,6 +371,13 @@ final class AppStore {
                 if date < today { paid += rub } else { remaining += rub }
             }
         }
+        // A trial's first charge is already scheduled — count it as remaining
+        // (from today, so trial days never leak in as paid history).
+        for sub in subscriptions where sub.status == .trial {
+            for _ in billingDates(of: sub, from: today, to: month.end) {
+                remaining += toRub(sub.amount, sub.currency)
+            }
+        }
         return (paid, remaining)
     }
 
@@ -360,7 +392,7 @@ final class AppStore {
     func futurePayments(days: Int = 90, now: Date = .now) -> [PaymentEvent] {
         let today = Calendar.current.startOfDay(for: now)
         let end = Calendar.current.date(byAdding: .day, value: days, to: today)!
-        return active
+        return (active + subscriptions.filter { $0.status == .trial })
             .flatMap { sub in billingDates(of: sub, from: today, to: end).map { PaymentEvent(subscription: sub, date: $0) } }
             .sorted { $0.date < $1.date }
     }
@@ -391,7 +423,7 @@ final class AppStore {
     func categoryShares(in interval: DateInterval, now: Date = .now) -> [CategoryShare] {
         let today = Calendar.current.startOfDay(for: now)
         var paid: [String?: Double] = [:], total: [String?: Double] = [:]
-        for sub in notCancelled {
+        for sub in chargeable {
             for date in billingDates(of: sub, from: interval.start, to: interval.end) {
                 let rub = toRub(sub.amount, sub.currency)
                 total[sub.categoryId, default: 0] += rub
@@ -407,7 +439,7 @@ final class AppStore {
 
     private func totals(buckets: [Date], end: Date, current: Date, bucketOf: (Date) -> Date) -> [PeriodTotal] {
         var sums = Dictionary(uniqueKeysWithValues: buckets.map { ($0, 0.0) })
-        for sub in notCancelled {
+        for sub in chargeable {
             for date in billingDates(of: sub, from: buckets.first!, to: end) {
                 sums[bucketOf(date), default: 0] += toRub(sub.amount, sub.currency)
             }

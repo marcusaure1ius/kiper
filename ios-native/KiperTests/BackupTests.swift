@@ -96,4 +96,17 @@ struct BackupTests {
         #expect(store.subscriptions.count == 2)
         #expect(store.categories.map(\.id) == ["cat-streaming", "cat-books"])
     }
+
+    @Test func trialRoundTripsThroughBackup() throws {
+        var sub = makeSub(id: "t", name: "Figma", amount: 600, next: day(2026, 12, 1), start: day(2026, 11, 1))
+        sub.status = .trial
+        sub.trialEndDate = day(2026, 12, 1)
+        let data = try BackupMapper.encode(BackupMapper.file(subscriptions: [sub], categories: []))
+
+        let dto = try BackupMapper.decode(data).subscriptions[0]
+        #expect(dto.status == "trial" && dto.trialEndDate == "2026-12-01T00:00:00.000")
+        let model = try #require(BackupMapper.subscription(dto))
+        #expect(model.status == .trial)
+        #expect(model.trialEndDate == day(2026, 12, 1))
+    }
 }

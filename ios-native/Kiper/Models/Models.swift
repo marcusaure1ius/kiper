@@ -60,11 +60,12 @@ enum BillingPeriod: String, CaseIterable, Identifiable, Codable {
 }
 
 enum SubscriptionStatus: String, CaseIterable, Codable {
-    case active, paused, cancelled
+    case active, trial, paused, cancelled
 
     var label: String {
         switch self {
         case .active: "Активна"
+        case .trial: "Триал"
         case .paused: "Приостановлена"
         case .cancelled: "Отменена"
         }
@@ -93,6 +94,8 @@ struct Subscription: Identifiable, Hashable {
     var nextBillingDate: Date
     var reminderDaysBefore: Int = 1
     var status: SubscriptionStatus = .active
+    /// When the free period ends (status == .trial); the first charge follows it.
+    var trialEndDate: Date?
     var startDate: Date
     var note: String?
     /// Domain used to fetch a favicon (same source as the Android catalog).

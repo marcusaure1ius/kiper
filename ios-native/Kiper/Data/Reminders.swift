@@ -43,6 +43,19 @@ enum Reminders {
                 ))
             }
         }
+        // A trial gets a single reminder before it ends and the first charge hits.
+        for sub in subscriptions where sub.status == .trial && sub.reminderDaysBefore > 0 {
+            guard let end = sub.trialEndDate,
+                  let fire = fireDate(for: end, daysBefore: sub.reminderDaysBefore, hour: hour, minute: minute, calendar: calendar),
+                  fire > now else { continue }
+            plans.append(Plan(
+                id: "\(prefix)\(sub.id)-0",
+                subscriptionId: sub.id,
+                fireDate: fire,
+                title: "Напоминание о подписке",
+                body: trialBody(for: sub, daysBefore: sub.reminderDaysBefore)
+            ))
+        }
         return Array(plans.sorted { $0.fireDate < $1.fireDate }.prefix(limit))
     }
 
@@ -57,6 +70,14 @@ enum Reminders {
         default: "через \(daysBefore) \(Fmt.plural(daysBefore, "день", "дня", "дней"))"
         }
         return "\(sub.name) — списание \(when), \(Fmt.money(sub.amount, sub.currency))"
+    }
+
+    static func trialBody(for sub: Subscription, daysBefore: Int) -> String {
+        let when = switch daysBefore {
+        case 1: "завтра"
+        default: "через \(daysBefore) \(Fmt.plural(daysBefore, "день", "дня", "дней"))"
+        }
+        return "\(sub.name) — триал заканчивается \(when), спишется \(Fmt.money(sub.amount, sub.currency))"
     }
 
     // MARK: - System

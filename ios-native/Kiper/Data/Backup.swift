@@ -50,6 +50,8 @@ struct SubscriptionDTO: Codable, Equatable {
     var note: String?
     var createdAt: String?
     var domain: String?
+    /// iOS-only: end of the free period (status "trial"); Android ignores it.
+    var trialEndDate: String?
 }
 
 struct CategoryDTO: Codable, Equatable {
@@ -119,7 +121,8 @@ enum BackupMapper {
             categoryId: s.categoryId, nextBillingDate: string(from: s.nextBillingDate),
             startDate: string(from: s.startDate), status: s.status.rawValue,
             reminderDaysBefore: s.reminderDaysBefore, note: s.note,
-            createdAt: string(from: s.createdAt), domain: s.domain
+            createdAt: string(from: s.createdAt), domain: s.domain,
+            trialEndDate: s.trialEndDate.map(string(from:))
         )
     }
 
@@ -132,6 +135,7 @@ enum BackupMapper {
             customPeriodDays: d.customPeriodDays, categoryId: d.categoryId,
             nextBillingDate: next, reminderDaysBefore: d.reminderDaysBefore ?? 1,
             status: d.status.flatMap(SubscriptionStatus.init(rawValue:)) ?? .active,
+            trialEndDate: d.trialEndDate.flatMap(date(from:)),
             startDate: start, note: d.note,
             domain: d.domain ?? CatalogEntry.all.first { $0.name.caseInsensitiveCompare(d.name) == .orderedSame }?.domain,
             createdAt: d.createdAt.flatMap(date(from:)) ?? .now,
@@ -207,7 +211,7 @@ enum CSVCodec {
     static let headers = [
         "id", "name", "amount", "currency", "billingPeriod",
         "customPeriodDays", "categoryId", "nextBillingDate",
-        "startDate", "status", "reminderDaysBefore", "note",
+        "startDate", "status", "reminderDaysBefore", "note", "trialEndDate",
     ]
 
     static func encode(_ subscriptions: [Subscription]) -> String {
@@ -218,6 +222,7 @@ enum CSVCodec {
                 d.id, d.name, Self.number(d.amount), d.currency, d.billingPeriod,
                 d.customPeriodDays.map(String.init), d.categoryId, d.nextBillingDate,
                 d.startDate, d.status, d.reminderDaysBefore.map(String.init), d.note,
+                d.trialEndDate,
             ]
             lines.append(values.map { escape($0 ?? "") }.joined(separator: ","))
         }
@@ -245,7 +250,8 @@ enum CSVCodec {
                 startDate: map["startDate"] ?? BackupMapper.string(from: .now),
                 status: map["status"],
                 reminderDaysBefore: map["reminderDaysBefore"].flatMap { Int($0) },
-                note: map["note"], createdAt: nil, domain: nil
+                note: map["note"], createdAt: nil, domain: nil,
+                trialEndDate: map["trialEndDate"]
             )
             return BackupMapper.subscription(dto)
         }
