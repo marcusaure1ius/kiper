@@ -58,34 +58,107 @@ struct NextChargeWidget: Widget {
 
 struct NextChargeView: View {
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.widgetFamily) private var family
     let entry: SnapshotEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if let next = entry.snapshot?.upcoming.first {
-                Text(next.name)
-                    .font(.headline)
-                    .lineLimit(1)
-                Text(when(next.date))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
-                Text(money(next))
-                    .font(.system(.title3, design: .rounded).weight(.bold))
-                    .foregroundStyle(accent)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
+        VStack(alignment: .leading, spacing: 8) {
+            if let snapshot = entry.snapshot, !snapshot.upcoming.isEmpty {
+                if family == .systemMedium {
+                    mediumList(snapshot)
+                } else {
+                    compact(snapshot)
+                }
             } else {
-                Image(systemName: "tray")
-                    .font(.title)
-                    .foregroundStyle(accent)
-                Text("Списаний нет")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 6) {
+                    Image(systemName: "tray")
+                        .font(.title)
+                        .foregroundStyle(accent)
+                    Text("Списаний нет")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .widgetBackground()
+    }
+
+    /// Small: the nearest charge on top, month total pinned to the bottom —
+    /// no dead space in between.
+    private func compact(_ snapshot: WidgetSnapshot) -> some View {
+        let next = snapshot.upcoming[0]
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(next.name)
+                    .font(.headline)
+                    .lineLimit(1)
+                Spacer(minLength: 6)
+                Text(money(next))
+                    .font(.headline)
+                    .foregroundStyle(accent)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            Text(when(next.date))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 0)
+
+            if let then = snapshot.upcoming.dropFirst().first {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("Затем: \(then.name)")
+                        .font(.caption.weight(.medium))
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    Text(money(then))
+                        .font(.caption.weight(.medium))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                }
+                .foregroundStyle(.secondary)
+                .minimumScaleFactor(0.8)
+            }
+            monthFooter(snapshot)
+        }
+    }
+
+    /// Medium: up to three upcoming charges plus the month footer.
+    private func mediumList(_ snapshot: WidgetSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(snapshot.upcoming.prefix(3).enumerated()), id: \.offset) { index, charge in
+                HStack(alignment: .firstTextBaseline) {
+                    Text(charge.name)
+                        .font(.subheadline.weight(.medium))
+                        .lineLimit(1)
+                    Spacer(minLength: 6)
+                    Text(when(charge.date))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(money(charge))
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .padding(.vertical, 7)
+                if index < min(snapshot.upcoming.count, 3) - 1 {
+                    Divider()
+                }
+            }
+            Spacer(minLength: 0)
+            monthFooter(snapshot)
+        }
+    }
+
+    private func monthFooter(_ snapshot: WidgetSnapshot) -> some View {
+        Text("Всего · \(rub(snapshot.monthlyTotalRub)) в мес.")
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
     }
 
     private var accent: Color {
@@ -105,6 +178,13 @@ struct NextChargeView: View {
         let symbol = switch charge.currency { case "USD": "$"; case "EUR": "€"; default: "₽" }
         let number = Self.rubFormatter.string(from: NSNumber(value: charge.amount)) ?? "0"
         return number + " \(symbol)"
+    }
+
+    private func rub(_ value: Double) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 0
+        return (f.string(from: NSNumber(value: value)) ?? "0") + " ₽"
     }
 
     private static let rubFormatter: NumberFormatter = {
@@ -129,6 +209,7 @@ struct MonthWidget: Widget {
 
 struct MonthView: View {
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.widgetFamily) private var family
     let entry: SnapshotEntry
 
     var body: some View {
@@ -155,6 +236,21 @@ struct MonthView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
+                if family == .systemMedium, let next = snap.upcoming.first {
+                    Divider()
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Далее: \(next.name)")
+                            .font(.subheadline.weight(.medium))
+                            .lineLimit(1)
+                        Spacer(minLength: 6)
+                        Text(when(next.date))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(money(next))
+                            .font(.subheadline.weight(.semibold))
+                            .monospacedDigit()
+                    }
+                }
             } else {
                 Text("Данные появятся после запуска Кипера")
                     .font(.footnote)
@@ -174,6 +270,23 @@ struct MonthView: View {
         f.locale = Locale(identifier: "ru_RU")
         f.dateFormat = "LLLL"
         return f.string(from: entry.date).capitalized
+    }
+
+    private func when(_ date: Date) -> String {
+        let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: entry.date), to: Calendar.current.startOfDay(for: date)).day ?? 0
+        switch days {
+        case 0: return "сегодня"
+        case 1: return "завтра"
+        default: return "через \(days) дн."
+        }
+    }
+
+    private func money(_ charge: WidgetSnapshot.Charge) -> String {
+        let symbol = switch charge.currency { case "USD": "$"; case "EUR": "€"; default: "₽" }
+        let number = NumberFormatter()
+        number.numberStyle = .decimal
+        number.maximumFractionDigits = 2
+        return (number.string(from: NSNumber(value: charge.amount)) ?? "0") + " \(symbol)"
     }
 
     private func rub(_ value: Double) -> String {
