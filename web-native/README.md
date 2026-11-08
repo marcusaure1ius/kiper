@@ -1,4 +1,4 @@
-# Кипер для веб
+# Кипер для веб (`web-native`)
 
 Веб-версия приложения «Кипер» (учёт подписок) — четвёртый клиент рядом с
 `ios-native` и `android-native`. Мобильная версия — точная копия iOS-приложения
@@ -22,7 +22,7 @@
 ## Запуск
 
 ```bash
-cd web
+cd web-native
 npm install
 npm run dev        # http://localhost:3000
 npm test           # vitest: schedule/backup/csv/format (32 теста)
@@ -35,7 +35,7 @@ npm run build      # прод-сборка
 ## Деплой на Vercel
 
 1. Импортируйте репозиторий в Vercel (New Project → Git).
-2. **Root Directory**: `web` — Vercel сам определит Next.js.
+2. **Root Directory**: `web-native` — Vercel сам определит Next.js.
 3. Ничего больше настраивать не нужно: нет переменных окружения и базы;
    данные пользователей живут в их браузерах, `/api/rates` — serverless-функция.
 
@@ -43,7 +43,7 @@ npm run build      # прод-сборка
 
 ```bash
 npm i -g vercel
-cd web
+cd web-native
 vercel            # превью
 vercel --prod     # продакшен
 ```
