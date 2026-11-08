@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="next_charge_widget_desc">Ближайшее списание</string>
+    <string name="month_widget_desc">Итог месяца и бюджет</string>
+    <string name="widget_no_data">Нет данных</string>
+    <string name="widget_today">Сегодня</string>
+    <string name="widget_tomorrow">Завтра</string>
+    <string name="widget_in_days">Через %1$d дн.</string>
+    <string name="widget_next_after">Далее: %1$s</string>
+    <string name="widget_paid">Оплачено</string>
+    <string name="widget_remaining">Осталось</string>
+    <string name="widget_no_charges">Списаний нет</string>
+</resources>
