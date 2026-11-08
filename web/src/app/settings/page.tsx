@@ -105,8 +105,8 @@ export default function SettingsPage() {
         </div>
         <div className="inset-row" style={{ alignItems: "flex-start", flexDirection: "column", gap: 10, paddingBlock: 14 }}>
           <span className="t-body">Цвета</span>
-          {/* вертикальный запас, чтобы кольцо выбранной плитки не обрезалось скроллом */}
-          <div className="scroll-x" style={{ width: "100%", padding: "8px 2px 12px" }}>
+          {/* запас по всем сторонам: кольцо выбранной плитки (5,5px) не должно срезаться скроллом */}
+          <div className="scroll-x" style={{ width: "100%", padding: "8px 10px 12px" }}>
             {PALETTES.map((p) => {
               const on = theme.palette === p;
               return (
