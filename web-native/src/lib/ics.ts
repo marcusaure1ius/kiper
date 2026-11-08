@@ -27,11 +27,13 @@ export function icsCalendar(events: PaymentEvent[], now: Date = new Date()): str
   const stamp = utcStamp(now);
   for (const event of events) {
     const sub = event.subscription;
+    // Basic RFC 5545 date format (20261201), same UID shape as the native apps.
+    const day = ymd(event.date).replace(/-/g, "");
     lines.push(
       "BEGIN:VEVENT",
-      `UID:${sub.id}-${ymd(event.date)}@kiper`,
+      `UID:${sub.id}-${day}@kiper`,
       `DTSTAMP:${stamp}`,
-      `DTSTART;VALUE=DATE:${ymd(event.date)}`,
+      `DTSTART;VALUE=DATE:${day}`,
       `SUMMARY:${icsEscape(`Списание — ${sub.name}`)}`,
       `DESCRIPTION:${icsEscape(`${money(sub.amount, sub.currency)} · ${periodLabel[sub.billingPeriod as BillingPeriod]}`)}`,
       "END:VEVENT",

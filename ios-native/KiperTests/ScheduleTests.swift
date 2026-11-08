@@ -59,4 +59,33 @@ struct ScheduleTests {
         #expect(BillingPeriod.custom.next(after: day(2026, 1, 1), customDays: 10) == day(2026, 1, 11))
         #expect(BillingPeriod.annual.monthlyEquivalent == 1.0 / 12.0)
     }
+
+    @Test func quarterlySemiannualAndAnnualSteps() {
+        let base = day(2026, 1, 10)
+        #expect(Schedule.step(base, .quarterly, customDays: nil, 1) == day(2026, 4, 10))
+        #expect(Schedule.step(base, .semiannual, customDays: nil, 1) == day(2026, 7, 10))
+        #expect(Schedule.step(base, .annual, customDays: nil, 1) == day(2027, 1, 10))
+    }
+
+    @Test func monthEndClampsInCommonYearsAndAcrossLeapDay() throws {
+        // The clamping must match Android's java.time exactly (shared backups
+        // keep their grid when they move between platforms).
+        let cl = Calendar.current
+        let feb = try #require(cl.date(byAdding: .month, value: 1, to: day(2025, 1, 31)))
+        #expect(cl.dateComponents([.year, .month, .day], from: feb) == DateComponents(year: 2025, month: 2, day: 28))
+        let fromLeap = try #require(cl.date(byAdding: .year, value: 1, to: day(2024, 2, 29)))
+        #expect(cl.dateComponents([.year, .month, .day], from: fromLeap) == DateComponents(year: 2025, month: 2, day: 28))
+    }
+
+    @Test func customPeriodDefaultsTo30AndClampsToPositive() {
+        let base = day(2026, 3, 1)
+        #expect(Schedule.step(base, .custom, customDays: nil, 1) == day(2026, 3, 31))
+        #expect(Schedule.step(base, .custom, customDays: 0, 1) == day(2026, 3, 2))
+        #expect(Schedule.step(base, .custom, customDays: -5, 1) == day(2026, 3, 2))
+    }
+
+    @Test func anchorGuardWhenStartAfterNext() {
+        let sub = makeSub(next: day(2026, 11, 20), start: day(2026, 12, 20))
+        #expect(Schedule.anchor(of: sub) == day(2026, 11, 20))
+    }
 }

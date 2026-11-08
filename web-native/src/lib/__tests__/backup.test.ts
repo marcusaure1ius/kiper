@@ -91,6 +91,31 @@ describe("backup round-trip", () => {
     expect(file.payments ?? []).toEqual([]);
   });
 
+  it("unknown enum values fall back instead of breaking the import", () => {
+    // A future app version may add currencies/periods/statuses; an older import
+    // must degrade gracefully (same rule as iOS/Android).
+    const sub = subscriptionFromDTO({
+      id: "x", name: "X", amount: 5, currency: "GBP", billingPeriod: "biweekly",
+      nextBillingDate: "2026-12-01T00:00:00.000", startDate: "2026-01-01T00:00:00.000",
+      status: "archived",
+    })!;
+    expect(sub.currency).toBe("RUB");
+    expect(sub.billingPeriod).toBe("monthly");
+    expect(sub.status).toBe("active");
+    const p = paymentFromDTO({
+      subscriptionId: "x", date: "2026-11-13T00:00:00.000", amount: 5, currency: "CHF",
+      amountRub: 450, kind: "refund", source: "carrier",
+    })!;
+    expect(p.kind).toBe("charge");
+    expect(p.source).toBe("auto");
+    expect(p.currency).toBe("RUB");
+  });
+
+  it("offset-zone timestamps are absolute instants, not local time", () => {
+    expect(backupDate("2026-10-13T12:00:00+05:00")?.toISOString()).toBe("2026-10-13T07:00:00.000Z");
+    expect(backupDate("2026-10-13T12:00:00-0800")?.toISOString()).toBe("2026-10-13T20:00:00.000Z");
+  });
+
   it("makeBackupFile → decodeBackup round-trips", () => {
     const sub = subscriptionFromDTO({
       id: "a", name: "A", amount: 9.99, currency: "USD", billingPeriod: "monthly",

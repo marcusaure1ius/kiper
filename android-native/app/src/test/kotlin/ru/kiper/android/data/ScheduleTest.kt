@@ -75,4 +75,47 @@ class ScheduleTest {
         assertEquals(now.plusDays(45), dates[1])
         assertEquals(now.plusDays(90), dates[2])
     }
+
+    @Test
+    fun everyPeriodStepsCorrectly() {
+        val base = LocalDate.of(2026, 1, 10)
+        assertEquals(base.plusDays(7), Schedule.step(base, BillingPeriod.WEEKLY, null, 1))
+        assertEquals(base.plusMonths(3), Schedule.step(base, BillingPeriod.QUARTERLY, null, 1))
+        assertEquals(base.plusMonths(6), Schedule.step(base, BillingPeriod.SEMIANNUAL, null, 1))
+        assertEquals(base.plusYears(1), Schedule.step(base, BillingPeriod.ANNUAL, null, 1))
+    }
+
+    /** Month-end clamping must match iOS Calendar for every period. */
+    @Test
+    fun monthEndClampsInCommonYearsAndAcrossLeapDay() {
+        // Non-leap year: Jan 31 → Feb 28 → Mar 31.
+        assertEquals(LocalDate.of(2025, 2, 28), Schedule.step(LocalDate.of(2025, 1, 31), BillingPeriod.MONTHLY, null, 1))
+        assertEquals(LocalDate.of(2025, 3, 31), Schedule.step(LocalDate.of(2025, 1, 31), BillingPeriod.MONTHLY, null, 2))
+        // Annual from a leap day lands on Feb 28 in a common year.
+        assertEquals(LocalDate.of(2025, 2, 28), Schedule.step(LocalDate.of(2024, 2, 29), BillingPeriod.ANNUAL, null, 1))
+        // Quarterly from Aug 31 → Nov 30; semiannual → Feb 28.
+        assertEquals(LocalDate.of(2024, 11, 30), Schedule.step(LocalDate.of(2024, 8, 31), BillingPeriod.QUARTERLY, null, 1))
+        assertEquals(LocalDate.of(2025, 2, 28), Schedule.step(LocalDate.of(2024, 8, 31), BillingPeriod.SEMIANNUAL, null, 1))
+    }
+
+    @Test
+    fun customPeriodDefaultsTo30AndClampsToPositive() {
+        val base = LocalDate.of(2026, 3, 1)
+        assertEquals(base.plusDays(30), Schedule.step(base, BillingPeriod.CUSTOM, null, 1))
+        assertEquals(base.plusDays(1), Schedule.step(base, BillingPeriod.CUSTOM, 0, 1))
+        assertEquals(base.plusDays(1), Schedule.step(base, BillingPeriod.CUSTOM, -5, 1))
+    }
+
+    @Test
+    fun daysBetweenCountsDays() {
+        assertEquals(7, Schedule.daysBetween(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 8)))
+        assertEquals(-3, Schedule.daysBetween(LocalDate.of(2026, 11, 8), LocalDate.of(2026, 11, 5)))
+    }
+
+    /** A corrupted row (start after next) anchors to nextBillingDate instead of looping. */
+    @Test
+    fun anchorGuardWhenStartAfterNext() {
+        val s = sub(start = LocalDate.of(2026, 12, 20), next = LocalDate.of(2026, 11, 20))
+        assertEquals(LocalDate.of(2026, 11, 20), Schedule.anchor(s))
+    }
 }

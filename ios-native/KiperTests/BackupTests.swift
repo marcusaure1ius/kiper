@@ -124,4 +124,66 @@ struct BackupTests {
         #expect(model.status == .trial)
         #expect(model.trialEndDate == day(2026, 12, 1))
     }
+
+    @Test func unknownEnumValuesFallBack() throws {
+        // A newer app may write values this version doesn't know; the import must
+        // degrade gracefully (same rule as Android / web).
+        let json = """
+        {"version": 1, "exportedAt": "", "subscriptions": [
+          {"id": "x", "name": "X", "amount": 5, "currency": "GBP", "billingPeriod": "biweekly",
+           "nextBillingDate": "2026-12-01T00:00:00.000", "startDate": "2026-01-01T00:00:00.000",
+           "status": "archived"}],
+         "categories": [], "payments": [
+          {"subscriptionId": "x", "date": "2026-11-13T00:00:00.000", "amount": 5, "currency": "CHF",
+           "amountRub": 450, "kind": "refund", "source": "carrier"}]}
+        """
+        let file = try BackupMapper.decode(Data(json.utf8))
+        let sub = try #require(BackupMapper.subscription(file.subscriptions[0]))
+        #expect(sub.currency == .rub)
+        #expect(sub.billingPeriod == .monthly)
+        #expect(sub.status == .active)
+        #expect(sub.reminderDaysBefore == 1, "missing optional field takes the default")
+        let dto = try #require(file.payments?.first)
+        let payment = try #require(BackupMapper.payment(dto))
+        #expect(payment.kind == .charge && payment.source == .auto && payment.currency == .rub)
+    }
+
+    @Test func offsetZoneDatesAreInstants() throws {
+        let d = try #require(BackupMapper.date(from: "2026-10-13T12:00:00+05:00"))
+        #expect(d.timeIntervalSince1970 == 1_791_874_800, "07:00 UTC — absolute, not device-local")
+    }
+
+    @Test func spaceSeparatedDatesAreLocal() throws {
+        let d = try #require(BackupMapper.date(from: "2026-10-13 12:30:00"))
+        let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: d)
+        #expect(comps == DateComponents(year: 2026, month: 10, day: 13, hour: 12, minute: 30))
+    }
+
+    @Test func versionlessFileIsAccepted() throws {
+        // A minimal file without a version key predates versioning — accept it.
+        let json = #"{"exportedAt": "", "subscriptions": [], "categories": [], "settings": {}}"#
+        let file = try BackupMapper.decode(Data(json.utf8))
+        #expect(file.subscriptions.isEmpty)
+    }
+
+    @Test func settingsWithNonStringValuesDoNotBreakImport() throws {
+        // Android historically wrote numbers/booleans into settings.
+        let json = #"{"version": 1, "exportedAt": "", "subscriptions": [], "categories": [], "settings": {"budgetRub": 12000, "flag": true}}"#
+        let file = try BackupMapper.decode(Data(json.utf8))
+        #expect(file.settings.isEmpty, "unreadable settings are dropped, the file still imports")
+    }
+
+    @Test func oneBrokenPaymentRowDropsOnlyItself() throws {
+        let json = """
+        {"version": 1, "exportedAt": "", "subscriptions": [], "categories": [],
+         "payments": [
+           {"subscriptionId": "p", "date": "2026-11-01T00:00:00.000", "amount": "22.99",
+            "currency": "USD", "amountRub": 2069.1, "kind": "charge", "source": "manual"},
+           {"subscriptionId": "q", "date": "2026-11-02T00:00:00.000", "amount": 9.99,
+            "currency": "EUR", "amountRub": 947.8, "kind": "charge", "source": "auto"}]}
+        """
+        let file = try BackupMapper.decode(Data(json.utf8))
+        #expect(file.payments?.count == 1, "the amount-as-string row is skipped, the history survives")
+        #expect(file.payments?.first?.subscriptionId == "q")
+    }
 }

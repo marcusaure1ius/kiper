@@ -34,4 +34,29 @@ struct RatesTests {
         ExchangeRates.store(snap, defaults: defaults)
         #expect(ExchangeRates.cached(defaults: defaults) == snap)
     }
+
+    @Test func nominalDividesTheValue() throws {
+        // CBR quotes some currencies per several units (TRY per 10, JPY per 1000):
+        // the rate is value / nominal. Nominal 0 and junk values are skipped.
+        let xml = """
+        <?xml version="1.0" encoding="windows-1251"?>
+        <ValCurs Date="11.10.2026">
+        <Valute><CharCode>USD</CharCode><Nominal>2</Nominal><Value>163,4372</Value></Valute>
+        <Valute><CharCode>EUR</CharCode><Nominal>100</Nominal><Value>9488,10</Value></Valute>
+        <Valute><CharCode>USD</CharCode><Nominal>0</Nominal><Value>1,0</Value></Valute>
+        <Valute><CharCode>EUR</CharCode><Value>мусор</Value></Valute>
+        </ValCurs>
+        """
+        let data = try #require(xml.data(using: .windowsCP1251))
+        let parsed = try ExchangeRates.parse(data)
+        #expect(parsed.rates.count == 2, "Nominal 0 and junk values are skipped")
+        #expect(abs(parsed.rates["USD"]! - 81.7186) < 1e-9)
+        #expect(abs(parsed.rates["EUR"]! - 94.881) < 1e-9)
+    }
+
+    @Test func corruptCacheFallsBack() {
+        let defaults = UserDefaults(suiteName: "kiper.rates.\(UUID().uuidString)")!
+        defaults.set(Data("broken json".utf8), forKey: "rates.snapshot")
+        #expect(ExchangeRates.cached(defaults: defaults) == .fallback)
+    }
 }

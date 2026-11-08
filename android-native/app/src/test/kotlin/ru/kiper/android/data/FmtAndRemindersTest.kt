@@ -100,6 +100,20 @@ class RemindersPlanTest {
         assertEquals(LocalDateTime.of(2026, 11, 21, 10, 0), plans[0].fireDate)
         assertEquals("Триал — триал заканчивается завтра", plans[0].body.substringBefore(','))
     }
+
+    /** iOS caps pending reminders at 60 — Android must keep the same policy. */
+    @Test
+    fun capsAtTheGlobalLimitAndStaysSorted() {
+        val subs = (1..25).map { i -> activeSub("s$i", LocalDate.of(2026, 11, 20)) }
+        val plans = Reminders.plan(
+            subscriptions = subs,
+            hour = 10, minute = 0,
+            now = LocalDateTime.of(2026, 11, 8, 12, 0),
+        )
+        // 25 × 3 = 75 candidates → capped at LIMIT.
+        assertEquals(Reminders.LIMIT, plans.size)
+        assertEquals(plans.sortedBy { it.fireDate }, plans)
+    }
 }
 
 class CsvCodecTest {

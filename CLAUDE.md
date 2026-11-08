@@ -29,8 +29,17 @@ xcodebuild -project Kiper.xcodeproj -scheme Kiper -destination 'platform=iOS Sim
 xcodebuild -project Kiper.xcodeproj -scheme Kiper -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 
 # Web
-cd web-native && npm run dev
+cd web-native
+npm run dev                        # dev server
+npm run typecheck                  # tsc --noEmit
+npm test                           # vitest run
+npm run build                      # production build (offline-safe)
 ```
+
+CI (GitHub Actions, `.github/workflows/`): each platform runs on push/PRs touching
+its folder — Android `:app:testDebugUnitTest` + `assembleDebug` (ubuntu), iOS
+`-only-testing:KiperTests` on macos-26 simulators (UI tests skipped — SpringBoard
+flaky), web typecheck + vitest + build (ubuntu).
 
 ## Cross-platform contract (do not break)
 

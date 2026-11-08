@@ -2,6 +2,7 @@ package ru.kiper.android.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -181,5 +182,62 @@ class AppStoreTest {
         s.upsert(sub("y", now.plusDays(1), BillingPeriod.ANNUAL))
         // 1000 ₽/мес + 1000 ₽/год = 1000 + 83.33
         assertEquals(1000.0 + 1000.0 / 12.0, s.monthlyTotalRub, 0.01)
+    }
+
+    /** Cross-platform contract: deletion detaches, never orphans. */
+    @Test
+    fun deleteCategoryDetachesSubscriptions() {
+        val s = store()
+        val cat = s.categories.first()
+        s.upsert(sub("a", now.plusDays(1)).also { it.categoryId = cat.id })
+        assertEquals(cat.id, s.subscription("a")!!.categoryId)
+        s.deleteCategory(cat.id)
+        assertNull(s.subscription("a")!!.categoryId)
+        assertNull(s.category(cat.id))
+    }
+
+    /** Cross-platform contract: a category missing from the file can't dangle. */
+    @Test
+    fun importDropsDanglingCategoryLinks() {
+        val sub = sub("a", now.plusDays(1)).also { it.categoryId = "ghost" }
+        val file = BackupMapper.file(subscriptions = listOf(sub), categories = emptyList())
+        val target = store()
+        target.importBackup(file, AppStore.ImportMode.REPLACE)
+        assertNull(target.subscription("a")!!.categoryId)
+    }
+
+    /** Same rule as iOS: bank truth replaces auto records but never manual edits. */
+    @Test
+    fun bankStatementNeverOverwritesManualPayments() {
+        val s = store()
+        val manualDay = now.minusDays(1)
+        s.upsert(sub("m", now.plusDays(3)))
+        s.markPaid(s.subscription("m")!!, manualDay)
+        val candidate = StatementCandidate(
+            id = "m", name = "S m",
+            occurrences = listOf(StatementOccurrence(manualDay, 799.0)),
+            medianAmount = 799.0, medianIntervalDays = 30,
+        )
+        s.attachStatement(candidate, "m", now)
+        val record = s.payments.first { it.subscriptionId == "m" && it.date == manualDay }
+        assertEquals(PaymentRecord.Source.MANUAL, record.source)
+        assertEquals(1000.0, record.amount, 1e-9)
+    }
+
+    @Test
+    fun bankStatementReplacesAutoHistory() {
+        val s = store()
+        val autoDay = now.minusDays(1)
+        s.upsert(sub("a", autoDay)) // rolls forward and auto-records the missed charge
+        assertEquals(PaymentRecord.Source.AUTO, s.payments.first { it.subscriptionId == "a" }.source)
+        val candidate = StatementCandidate(
+            id = "a", name = "S a",
+            occurrences = listOf(StatementOccurrence(autoDay, 799.0)),
+            medianAmount = 799.0, medianIntervalDays = 30,
+        )
+        s.attachStatement(candidate, "a", now)
+        val record = s.payments.first { it.subscriptionId == "a" && it.date == autoDay }
+        assertEquals(PaymentRecord.Source.BANK, record.source)
+        assertEquals(799.0, record.amount, 1e-9)
     }
 }

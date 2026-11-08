@@ -103,4 +103,43 @@ class StatementImportTest {
         assertEquals(listOf("a", "b"), rows[0])
         assertNotNull(StatementImporter.parse("x"))
     }
+
+    /** Comma-separated banks (dot decimals) must be detected too. */
+    @Test
+    fun parsesCommaDelimitedStatements() {
+        val text = listOf(
+            "Дата,Описание,Сумма",
+            "01.10.2026,ООО ЯНДЕКС.ТАКСИ (CARD 4111 **** 1234),799.00",
+            "15.10.2026,Кофейня Утро,350.00",
+            "31.10.2026,ООО ЯНДЕКС.ТАКСИ (CARD 4111 **** 1234),799.00",
+            "30.11.2026,ООО ЯНДЕКС.ТАКСИ (CARD 4111 **** 1234),799.00",
+        ).joinToString("\n")
+        val candidates = StatementImporter.parse(text)
+        assertEquals(1, candidates.size)
+        assertEquals(799.0, candidates[0].medianAmount, 0.01)
+        assertEquals(30, candidates[0].medianIntervalDays)
+    }
+
+    /** Gap between charges decides the billing period, matching the iOS buckets. */
+    @Test
+    fun intervalDaysMapToBillingPeriods() {
+        fun candidate(days: Int): StatementCandidate {
+            val first = LocalDate.of(2026, 1, 1)
+            return StatementCandidate(
+                id = "x", name = "X",
+                occurrences = listOf(
+                    StatementOccurrence(first, 100.0),
+                    StatementOccurrence(first.plusDays(days.toLong()), 100.0),
+                    StatementOccurrence(first.plusDays(days * 2L), 100.0),
+                ),
+                medianAmount = 100.0, medianIntervalDays = days,
+            )
+        }
+        assertEquals(BillingPeriod.WEEKLY, candidate(7).billingPeriod.first)
+        assertEquals(BillingPeriod.CUSTOM, candidate(14).billingPeriod.first)
+        assertEquals(BillingPeriod.MONTHLY, candidate(30).billingPeriod.first)
+        assertEquals(BillingPeriod.QUARTERLY, candidate(90).billingPeriod.first)
+        assertEquals(BillingPeriod.SEMIANNUAL, candidate(180).billingPeriod.first)
+        assertEquals(BillingPeriod.ANNUAL, candidate(365).billingPeriod.first)
+    }
 }

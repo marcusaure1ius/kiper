@@ -123,4 +123,98 @@ class BackupTest {
             PaymentRecord.makeId("sub-1", LocalDate.of(2026, 11, 8)),
         )
     }
+
+    @Test
+    fun corruptJsonThrowsAFriendlyError() {
+        for (bad in listOf("не json", "{}", "{\"version\": 1}")) {
+            try {
+                BackupMapper.decode(bad)
+                throw AssertionError("must throw for: $bad")
+            } catch (_: BackupException) {
+                // expected
+            }
+        }
+    }
+
+    @Test
+    fun offsetZoneDatesAreInstants() {
+        // A colon offset is an absolute instant, converted to the device zone —
+        // same rule as "Z". (Compact offsets like "-0800" are rejected on all
+        // platforms: iOS ISO8601DateFormatter requires the colon too.)
+        val colon = BackupMapper.date("2026-10-13T12:00:00+05:00")
+        assertEquals(
+            java.time.OffsetDateTime.parse("2026-10-13T12:00:00+05:00")
+                .atZoneSameInstant(java.time.ZoneId.systemDefault()).toLocalDate(),
+            colon,
+        )
+        // …and a zoned-looking string that fails to parse drops the row, not the file.
+        assertNull(BackupMapper.date("2026-10-13T12:00:00-0800"))
+    }
+
+    @Test
+    fun paymentKindAndSourceMapping() {
+        fun pay(kind: String, source: String): PaymentRecord? = BackupMapper.payment(
+            PaymentRecordDTO(
+                subscriptionId = "s", date = "2026-10-20T00:00:00.000", amount = 5.0,
+                currency = "RUB", amountRub = 5.0, kind = kind, source = source,
+            ),
+        )
+        assertEquals(PaymentRecord.Kind.SKIP, pay("skip", "manual")!!.kind)
+        assertEquals(PaymentRecord.Kind.CHARGE, pay("charge", "manual")!!.kind)
+        // Unknown kinds/sources degrade to the defaults instead of crashing.
+        assertEquals(PaymentRecord.Kind.CHARGE, pay("refund", "manual")!!.kind)
+        assertEquals(PaymentRecord.Source.MANUAL, pay("charge", "manual")!!.source)
+        assertEquals(PaymentRecord.Source.BANK, pay("charge", "bank")!!.source)
+        assertEquals(PaymentRecord.Source.AUTO, pay("charge", "перевод")!!.source)
+        // An unreadable payment date drops just this row.
+        assertNull(BackupMapper.payment(
+            PaymentRecordDTO("s", "мусор", 1.0, "RUB", 1.0, "charge", "auto"),
+        ))
+    }
+
+    @Test
+    fun unknownEnumValuesFallBack() {
+        // A newer app may write values this version doesn't know; import must survive.
+        val file = BackupMapper.decode(
+            """
+            {"version": 1, "exportedAt": "", "subscriptions": [
+              {"id": "x", "name": "X", "amount": 5.0, "currency": "GBP",
+               "billingPeriod": "biweekly", "nextBillingDate": "2026-12-01T00:00:00.000",
+               "startDate": "2026-01-01T00:00:00.000", "status": "archived"}],
+             "categories": []}
+            """.trimIndent(),
+        )
+        val sub = BackupMapper.subscription(file.subscriptions[0])!!
+        assertEquals(Currency.RUB, sub.currency)
+        assertEquals(BillingPeriod.MONTHLY, sub.billingPeriod)
+        assertEquals(SubscriptionStatus.ACTIVE, sub.status)
+        // Missing optional fields take the defaults.
+        assertEquals(1, sub.reminderDaysBefore)
+    }
+
+    @Test
+    fun unknownIconFallsBack() {
+        assertEquals(IconMap.FALLBACK_SYMBOL, IconMap.symbol("rocket_launch"))
+        // Valid SF names pass through material(for:) unchanged.
+        assertEquals("rocket_launch", IconMap.material("rocket_launch"))
+        assertEquals("movie", IconMap.material("play.tv.fill"))
+        assertEquals("play.tv.fill", IconMap.symbol("movie"))
+        val category = BackupMapper.category(CategoryDTO("c", "C", 0xFF000000L or 0x7C4DFF, "unknown_icon"))
+        assertEquals(IconMap.FALLBACK_SYMBOL, category.symbol)
+        assertEquals(0x7C4DFF, category.colorHex)
+    }
+
+    @Test
+    fun unreadableSubscriptionRowIsDropped() {
+        val file = BackupMapper.decode(
+            """
+            {"version": 1, "exportedAt": "", "subscriptions": [
+              {"id": "x", "name": "X", "amount": 5.0, "currency": "RUB",
+               "billingPeriod": "monthly", "nextBillingDate": "мусор",
+               "startDate": "2026-01-01T00:00:00.000"}],
+             "categories": []}
+            """.trimIndent(),
+        )
+        assertNull(BackupMapper.subscription(file.subscriptions[0]))
+    }
 }

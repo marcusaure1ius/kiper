@@ -84,4 +84,57 @@ struct PaymentTests {
         let history = store.pastPayments(now: Calendar.current.date(byAdding: .day, value: 7, to: now)!)
         #expect(history.contains { $0.subscription.id == "gone" && $0.record != nil })
     }
+
+    @Test func severalMissedChargesRecordEachDay() throws {
+        let store = makeStore()
+        let now = Date.now
+        // Two monthly charges slipped past while the app wasn't opened.
+        let sub = makeSub(id: "mm", amount: 300,
+                          next: Calendar.current.date(byAdding: .month, value: -2, to: now)!,
+                          start: Calendar.current.date(byAdding: .month, value: -3, to: now)!)
+        store.upsert(sub)
+        #expect(store.payments.count == 2, "each missed grid day gets its own record")
+        #expect(Set(store.payments.map(\.id)).count == 2, "ids stay stable per subscription + day")
+        #expect(store.payments.allSatisfy { $0.source == .auto })
+    }
+
+    /// Same rule as Android: bank truth replaces auto records, never manual edits.
+    @Test func bankStatementNeverOverwritesManualPayments() throws {
+        let store = makeStore()
+        let now = Date.now
+        let manualDay = day(2026, 11, 7)
+        let sub = makeSub(id: "m", amount: 1000, next: day(2026, 11, 11), start: day(2026, 1, 11))
+        store.upsert(sub)
+        store.markPaid(sub, on: manualDay)
+
+        let candidate = StatementCandidate(
+            id: "m", name: "Test",
+            occurrences: [StatementOccurrence(date: manualDay, amount: 799)],
+            medianAmount: 799, medianIntervalDays: 30,
+        )
+        store.attachStatement(candidate, to: "m", now: now)
+
+        let record = try #require(store.payments.first { $0.subscriptionId == "m" && $0.date == manualDay })
+        #expect(record.source == .manual, "a manual correction survives the bank import")
+        #expect(record.amount == 1000)
+    }
+
+    @Test func bankStatementReplacesAutoHistory() throws {
+        let store = makeStore()
+        let now = Date.now
+        let autoDay = day(2026, 11, 7)
+        let sub = makeSub(id: "a", amount: 1000, next: autoDay, start: day(2026, 1, 11))
+        store.upsert(sub) // rolls forward, auto-recording the missed charge
+        #expect(store.payments.first?.source == .auto)
+
+        let candidate = StatementCandidate(
+            id: "a", name: "Test",
+            occurrences: [StatementOccurrence(date: autoDay, amount: 799)],
+            medianAmount: 799, medianIntervalDays: 30,
+        )
+        store.attachStatement(candidate, to: "a", now: now)
+
+        let record = try #require(store.payments.first { $0.subscriptionId == "a" && $0.date == autoDay })
+        #expect(record.source == .bank && record.amount == 799)
+    }
 }
