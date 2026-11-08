@@ -1,17 +1,16 @@
 # Кипер
 
-Приложение для учёта подписок.
+Приложение для учёта подписок. Нативные порты по платформам:
 
-## Getting Started
+| Папка | Платформа | Стек |
+|---|---|---|
+| [`ios-native/`](ios-native/) | iOS | SwiftUI, iOS 26 |
+| [`android-native/`](android-native/) | Android | Kotlin + Jetpack Compose, minSdk 26 |
+| [`web-native/`](web-native/) | Web | Next.js + TypeScript |
 
-This project is a starting point for a Flutter application.
+**Кросс-платформенный контракт** — формат бэкапа JSON v1: файл экспорта из одного
+приложения импортируется в любое другое без потерь (подписки, категории,
+история платежей, триалы, бюджет). Детали в `android-native/README.md` и
+`ios-native/README.md`.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Брендовый логотип: `logo_rounded.png` / `logo_rounded.svg` (источник иконок всех платформ).

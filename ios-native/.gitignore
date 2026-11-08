@@ -1,0 +1,7 @@
+# Xcode build output
+build/
+
+# Local workspace state (folder-synchronized groups regenerate it)
+Kiper.xcodeproj/project.xcworkspace/
+
+.DS_Store

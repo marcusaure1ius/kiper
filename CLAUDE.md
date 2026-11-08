@@ -4,62 +4,58 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Кипер (Kiper) — Flutter Android app for tracking recurring subscriptions with multi-currency support, analytics, and notifications.
+Кипер (Kiper) — subscription tracker with multi-currency support, analytics and notifications. **One product, three native apps** — no shared code, only a shared file-format contract:
+
+| Folder | Platform | Stack |
+|---|---|---|
+| `android-native/` | Android | Kotlin 2.0 + Jetpack Compose, Glance widgets, minSdk 26 |
+| `ios-native/` | iOS | SwiftUI (iOS 26, Liquid Glass), no dependencies |
+| `web-native/` | Web | Next.js + TypeScript |
+
+`logo_rounded.png` / `logo_rounded.svg` — brand logo, source for every platform's icon.
 
 ## Build & Run
 
 ```bash
-flutter pub get                                                   # install dependencies
-dart run build_runner build --delete-conflicting-outputs           # code generation (Drift, freezed, Riverpod)
-flutter build apk --debug                                         # build debug APK
-flutter install --debug                                           # install on connected device
-flutter run                                                       # run on connected device/emulator
-flutter test                                                      # run all tests
-flutter test test/path/to_test.dart                                # run single test file
-dart analyze                                                      # static analysis (must show "No issues found!")
-```
+# Android (JDK 17+, Android SDK 35; sdk.dir in android-native/local.properties)
+cd android-native
+./gradlew :app:assembleDebug        # APK → app/build/outputs/apk/debug/
+./gradlew :app:testDebugUnitTest    # domain unit tests
+./gradlew :app:installDebug         # install on connected device
 
-Always run `build_runner` after modifying files with `part` directives (models, database, providers).
-
-## Architecture
-
-Feature-first + Riverpod. Code in `lib/features/{feature}/` with models/providers/screens/widgets. Core services in `lib/core/`.
-
-- **State management**: Riverpod v4 (`flutter_riverpod ^3.1.0`) with code generation (`@riverpod` annotation). Use `Ref` (not feature-specific Ref types) in provider functions.
-- **Database**: Drift (SQLite) — schema in `lib/core/database/app_database.dart`, provider in `lib/core/database/database_provider.dart`
-- **Models**: freezed v3 + json_serializable — use `abstract class` with `_$` mixin pattern. Generated `.freezed.dart` and `.g.dart` files.
-- **Navigation**: go_router with StatefulShellRoute for bottom nav (3 tabs: Подписки, Аналитика, Настройки)
-- **Theme**: Material 3 with dynamic_color, persisted via SharedPreferences
-- **Notifications**: flutter_local_notifications with timezone, scheduled reminders
-
-## Key Conventions
-
-- Enums for Currency, BillingPeriod, SubscriptionStatus — not strings in app logic (strings only in DB layer)
-- Exchange rates fetched from CBR XML API (`https://www.cbr.ru/scripts/XML_daily.asp`), fallback hardcoded rates
-- Subscription soft-delete: status changes to `cancelled`, row stays in DB for analytics
-- When deleting a category, null out `categoryId` on related subscriptions first
-- Russian-only UI, no l10n
-- All amounts displayed in original currency + RUB equivalent
-- Test data seeded in `main.dart` when DB is empty (debug only — remove for production)
-
-## Android Build Notes
-
-- Requires Java 17 (set in `android/gradle.properties` via `org.gradle.java.home`)
-- Core library desugaring enabled in `android/app/build.gradle.kts`
-- `sqlite3_flutter_libs` required for SQLite native library on Android
-
-## iOS native app (`ios-native/`)
-
-Separate SwiftUI app for iOS 26 (Liquid Glass), no dependencies. See `ios-native/README.md`.
-
-```bash
+# iOS (folder-synchronized groups: new files need no pbxproj edits)
 cd ios-native
 xcodebuild -project Kiper.xcodeproj -scheme Kiper -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 xcodebuild -project Kiper.xcodeproj -scheme Kiper -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+
+# Web
+cd web-native && npm run dev
 ```
 
-- Folder-synchronized Xcode groups: new files in `Kiper/` or `KiperTests/` need no pbxproj edits
-- State lives in `Kiper/Data/AppStore.swift` (`@Observable`, `@MainActor`); persisted as JSON in the Android backup format (`Kiper/Data/Backup.swift`) — keep it compatible with `lib/features/settings/widgets/export_import_section.dart`
-- Schedule rule: future charges start at `nextBillingDate`; history goes back to `startDate`
-- Accent colour comes from the selected background palette (`PaletteAccent`, `\.appAccent`) — don't use `Color.accentColor` directly
-- Russian-only UI; `Fmt` in `Kiper/Shared/Formatting.swift` for money/dates/plurals
+## Cross-platform contract (do not break)
+
+The **backup JSON v1** format is the only link between platforms — an export from one app imports into any other losslessly:
+
+- Roots: `version`, `exportedAt`, `subscriptions[]`, `categories[]`, `settings{budgetRub}`, `payments[]`
+- Dates are **local** ISO strings `yyyy-MM-dd'T'HH:mm:ss.SSS` (no zone); a bare `yyyy-MM-dd` is also valid. Only zone-suffixed strings are instants
+- Category color = ARGB int (`0xFF7C4DFF` = 4286336511); icon field stores SF Symbol names (iOS) — Android maps them to Material icons via `IconMap`
+- `PaymentRecord.id = subscriptionId-yyyy-MM-dd` — stable key across devices; derived, never stored
+- Android: `data/Backup.kt`; iOS: `Kiper/Data/Backup.swift`. Fix both sides together
+- Category deletion must null `categoryId` on subscriptions first (all platforms)
+- Subscription soft-delete: status → `cancelled`, row stays for analytics
+
+## Shared conventions
+
+- Russian-only UI, no l10n; money/dates/plurals via `Fmt` (`data/Fmt.kt` / `Kiper/Shared/Formatting.swift`)
+- Amounts always shown in original currency + RUB equivalent
+- Rates from CBR XML (`https://www.cbr.ru/scripts/XML_daily.asp`, windows-1251, decimal comma, `Nominal`-aware), cached ≤6 h, fallback USD 90 / EUR 98
+- 6 background palettes (lavender/aurora/sunset/ocean/graphite/iris), each with light/dark accent — theme via reactive state, never hardcode an accent color
+- Demo seed data on first launch in debug builds only
+- Trials: status `trial` + `trialEndDate`; when the end passes, the app activates the subscription and starts paid history at the (old) `nextBillingDate` — trial days never produce phantom charges
+
+## Android specifics (`android-native/`)
+
+- State: singleton `AppStore` with Compose snapshot state; one `kiper.json` in filesDir (same format as backups), atomic write on every change
+- Widgets (Glance) read `widget-snapshot.json` from filesDir — schema mirrors `KiperShared/WidgetSnapshot.swift`; widget metadata **must** keep `android:initialLayout="@layout/glance_default_loading_layout"` or the launcher silently drops the provider
+- Reminders: full rebuild via `Reminders.plan()` (≤60, ≤3 per subscription) on every store change; AlarmManager exact-alarms with inexact fallback; `BootReceiver` re-arms after reboot
+- No cloud sync — exports/imports + SAF-folder auto-backup play that role
