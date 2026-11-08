@@ -41,8 +41,9 @@ export function SpendingChart({
   const height = 220;
   const max = niceMax(data.map((d) => d.amount));
   const barArea = 44; // bar column width in the viewBox
+  const gutter = 34; // reserved for the y-axis labels
 
-  const width = data.length * barArea;
+  const width = gutter + data.length * barArea;
   const chartH = height - 26; // label strip
   const barW = Math.min(28, barArea - 12);
 
@@ -51,18 +52,19 @@ export function SpendingChart({
       {[0.25, 0.5, 0.75, 1].map((f) => (
         <text
           key={f}
-          x={2}
-          y={chartH * (1 - f) - 2}
+          x={gutter - 6}
+          y={Math.max(10, chartH * (1 - f) + 3)}
           fontSize="10"
           fill="var(--label-3)"
           className="num"
+          textAnchor="end"
         >
           {axisLabel(max * f)}
         </text>
       ))}
       {data.map((d, i) => {
         const h = Math.max(2, (d.amount / max) * chartH);
-        const x = i * barArea + (barArea - barW) / 2;
+        const x = gutter + i * barArea + (barArea - barW) / 2;
         const y = chartH - h;
         const isSel = selected === i;
         const fill = isSel
@@ -73,10 +75,10 @@ export function SpendingChart({
         return (
           <g key={d.start.getTime()} onClick={() => onSelect(i)} style={{ cursor: "pointer" }}>
             {/* tap target */}
-            <rect x={i * barArea} y={0} width={barArea} height={chartH + 24} fill="transparent" />
+            <rect x={gutter + i * barArea} y={0} width={barArea} height={chartH + 24} fill="transparent" />
             <rect x={x} y={y} width={barW} height={h} rx={6} fill={fill} />
             <text
-              x={i * barArea + barArea / 2}
+              x={gutter + i * barArea + barArea / 2}
               y={height - 8}
               fontSize="10"
               textAnchor="middle"
@@ -88,7 +90,7 @@ export function SpendingChart({
           </g>
         );
       })}
-      <line x1={0} y1={chartH} x2={width} y2={chartH} stroke="var(--divider)" strokeWidth={0.5} />
+      <line x1={gutter} y1={chartH} x2={width} y2={chartH} stroke="var(--divider)" strokeWidth={0.5} />
     </svg>
   );
 }
