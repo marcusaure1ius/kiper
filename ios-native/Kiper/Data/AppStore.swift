@@ -296,7 +296,8 @@ final class AppStore {
                 amountRub: occurrence.amount, kind: .charge, source: .bank
             )
             if let i = payments.firstIndex(where: { $0.id == record.id }) {
-                payments[i] = record
+                // A manual edit wins over the bank too (same rule as recordPayment / Android).
+                if payments[i].source == .auto { payments[i] = record }
             } else {
                 payments.append(record)
             }

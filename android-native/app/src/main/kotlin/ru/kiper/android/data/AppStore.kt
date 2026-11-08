@@ -333,7 +333,12 @@ class AppStore(
                 source = PaymentRecord.Source.BANK,
             )
             val i = payments.indexOfFirst { it.id == record.id }
-            if (i >= 0) payments[i] = record else payments.add(record)
+            // A manual edit wins over the bank too (same rule as recordPayment / iOS).
+            if (i >= 0) {
+                if (payments[i].source == PaymentRecord.Source.AUTO) payments[i] = record
+            } else {
+                payments.add(record)
+            }
         }
     }
 

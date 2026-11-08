@@ -34,8 +34,28 @@ struct BackupFile: Codable, Equatable {
         categories = try c.decodeIfPresent([CategoryDTO].self, forKey: .categories) ?? []
         // Android writes `{}` today; tolerate any non-string values.
         settings = (try? c.decodeIfPresent([String: String].self, forKey: .settings)) ?? [:]
-        // A single unreadable payment row must not break the whole file.
-        payments = (try? c.decodeIfPresent([PaymentRecordDTO].self, forKey: .payments))
+        // A single unreadable payment row drops just that row (same as Android).
+        payments = Self.lossyRows(c, forKey: .payments)
+    }
+
+    /// Swallows any payload — used to skip a corrupted array element.
+    private struct IgnoredRow: Decodable {
+        init(from decoder: Decoder) throws {}
+    }
+
+    /// Decodes `[T]` keeping only the readable rows; `nil` when the key is absent.
+    private static func lossyRows<T: Decodable, K: CodingKey>(_ c: KeyedDecodingContainer<K>, forKey key: K) -> [T]? {
+        guard c.contains(key) else { return nil }
+        guard var array = try? c.nestedUnkeyedContainer(forKey: key) else { return [] }
+        var rows: [T] = []
+        while !array.isAtEnd {
+            if let row = try? array.decode(T.self) {
+                rows.append(row)
+            } else {
+                _ = try? array.decode(IgnoredRow.self) // advance past the junk row
+            }
+        }
+        return rows
     }
 }
 
