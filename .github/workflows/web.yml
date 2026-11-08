@@ -1,0 +1,43 @@
+# Web: typecheck + vitest + production build (no env vars required; the rates
+# proxy degrades to a 502 when cbr.ru is unreachable, so the build is offline-safe).
+name: web
+
+on:
+  push:
+    branches: [main]
+    paths: ["web-native/**", ".github/workflows/web.yml"]
+  pull_request:
+    paths: ["web-native/**", ".github/workflows/web.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web-native/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web-native
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: web-native
+        run: npm run typecheck
+
+      - name: Unit tests
+        working-directory: web-native
+        run: npm test
+
+      - name: Build
+        working-directory: web-native
+        run: npm run build

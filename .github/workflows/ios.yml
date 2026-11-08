@@ -1,0 +1,54 @@
+# iOS: unit tests on a simulator (Xcode 26 needed for the iOS 26 deployment target).
+# The SpringBoard-dependent KiperUITests bundle is skipped on purpose — reminder
+# delivery E2E is too flaky on CI.
+name: ios
+
+on:
+  push:
+    branches: [main]
+    paths: ["ios-native/**", ".github/workflows/ios.yml"]
+  pull_request:
+    paths: ["ios-native/**", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick an available iPhone simulator
+        id: sim
+        run: |
+          xcrun simctl list devices available
+          UDID=$(xcrun simctl list devices available | grep -oE 'iPhone[^(]*\(([A-F0-9-]{36})\)' | grep -oE '[A-F0-9-]{36}' | head -1)
+          if [ -z "$UDID" ]; then
+            echo "No iPhone simulator found" >&2
+            exit 1
+          fi
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Run unit tests
+        working-directory: ios-native
+        # Unsigned simulator builds keep CloudKit off by design (CloudSyncEngine).
+        run: |
+          xcodebuild -project Kiper.xcodeproj -scheme Kiper \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -only-testing:KiperTests \
+            -resultBundlePath /tmp/kiper-tests.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            test | tee /tmp/xcodebuild.log
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-logs
+          path: |
+            /tmp/xcodebuild.log
+            /tmp/kiper-tests.xcresult
+          retention-days: 7
