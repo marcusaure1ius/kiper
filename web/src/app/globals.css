@@ -360,6 +360,7 @@ a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transpar
   border-top: 0.5px solid var(--glass-border);
   box-shadow: var(--nav-elev);
 }
+.tab-bar a,
 .tab-bar button {
   display: flex;
   flex-direction: column;
@@ -371,7 +372,9 @@ a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transpar
   font-weight: 500;
   transition: color 0.15s ease, transform 0.15s ease;
 }
+.tab-bar a:active,
 .tab-bar button:active { transform: scale(0.92); }
+.tab-bar a.on,
 .tab-bar button.on { color: var(--accent); }
 
 /* tab-bar accessory (next charge) */
@@ -527,6 +530,7 @@ a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transpar
   .sidebar { display: flex; }
   .tab-bar, .accessory { display: none; }
 }
+.sidebar a,
 .sidebar button {
   display: flex;
   align-items: center;
@@ -538,8 +542,14 @@ a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transpar
   color: var(--label-2);
   transition: background 0.15s ease, color 0.15s ease;
 }
+.sidebar a:hover,
+.sidebar button:hover {
+  background: var(--field-bg);
+  color: var(--label);
+}
+.sidebar a.on,
 .sidebar button.on {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent);
 }
 
