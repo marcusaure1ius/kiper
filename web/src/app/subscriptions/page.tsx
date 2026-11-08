@@ -4,7 +4,7 @@
 // subscription rows.
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MagnifyingGlass, Plus, Tray, X } from "@phosphor-icons/react";
 import { relative, rub, smartDate } from "@/lib/format";
 import { periodLabel, statusLabel, Subscription } from "@/lib/models";
@@ -21,6 +21,14 @@ export default function SubscriptionsPage() {
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 6);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const active = useMemo(() => subs.filter((s) => s.status !== "cancelled"), [subs]);
   const visible = useMemo(() => {
@@ -38,7 +46,7 @@ export default function SubscriptionsPage() {
 
   return (
     <div className="page">
-      <div className="nav-bar">
+      <div className={`nav-bar ${scrolled ? "scrolled" : ""}`}>
         <h1 className="t-title" style={{ margin: 0 }}>
           Подписки
         </h1>
