@@ -6,13 +6,9 @@
 	<array>
 		<string>group.ru.kiper</string>
 	</array>
-	<key>com.apple.developer.icloud-container-identifiers</key>
-	<array>
-		<string>iCloud.ru.kiper.ios</string>
-	</array>
-	<key>com.apple.developer.icloud-services</key>
-	<array>
-		<string>CloudKit</string>
-	</array>
+	<!-- iCloud (iCloud.ru.kiper.ios + CloudKit) removed: a Personal Team cannot
+	     sign the iCloud capability (this broke device installs since 2026-11-06).
+	     Re-add it together with CloudSync when a paid developer account lands —
+	     CloudSyncEngine self-disables without the entitlement. -->
 </dict>
 </plist>

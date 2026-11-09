@@ -37,8 +37,8 @@ if [[ "${1:-}" != "--force" && $age -lt $MIN_AGE_DAYS ]]; then
   exit 0   # fresh enough, stay quiet
 fi
 
-# Is the phone reachable right now?
-if ! xcrun devicectl list devices 2>/dev/null | grep "$DEVICE_ID" | grep -qE "available|connected"; then
+# Is the phone reachable right now? ("unavailable" must not match "available")
+if ! xcrun devicectl list devices 2>/dev/null | grep "$DEVICE_ID" | grep -qE '\(UDID\)[[:space:]]*(available|connected)([[:space:]]|$)'; then
   log "skip: iPhone not reachable (last success ${age}d ago)"
   if (( age >= 6 )); then
     notify "Подпись скоро истечёт" "Подключите iPhone к Mac или той же Wi‑Fi — Кипер обновится сам."
@@ -62,8 +62,8 @@ installed=0
 for attempt in 1 2 3; do
   out=$(xcrun devicectl device install app --device "$DEVICE_ID" "$APP" 2>&1) && { installed=1; break; }
   print -r -- "$out" | tail -3
-  if print -r -- "$out" | grep -q "4016"; then
-    log "iPhone is locked, retry $attempt/3 in 60s"
+  if print -r -- "$out" | grep -qE "4016|timed out|error 60"; then
+    log "transient install error (locked phone / USB timeout), retry $attempt/3 in 60s"
     sleep 60
   else
     break
